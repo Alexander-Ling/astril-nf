@@ -23,6 +23,7 @@ import argparse
 import json
 import re
 import sys
+import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -33,12 +34,33 @@ BUILTIN_PARENTS = {"custom_dataset"}
 NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 .&\-@!#'()/]*")
 
 
-def check(result, expected_type, what):
-    """The SDK's create endpoint RETURNS a PortalErrorResponse on HTTP 400 instead of raising,
-    so every write's result is checked explicitly; never assume a call that didn't raise worked."""
-    if not isinstance(result, expected_type):
-        sys.exit(f"{what} failed: {result}")
-    return result
+# Cirro reads the (public) repo from GitHub on every create/update/sync. After a few calls in
+# quick succession it starts answering with this error for a repo it read fine seconds earlier
+# (looks like a GitHub rate limit on Cirro's side), so pace calls and retry on exactly that error.
+REPO_THROTTLE_MSG = "repository is not found or we do not have the required permissions"
+PAUSE_BETWEEN_PIPELINES_S = 30
+RETRY_WAITS_S = (60, 120, 240)
+
+
+def call(fn, expected_type, what):
+    """Run one Cirro write, check its result, and retry only on the repo-throttle error.
+
+    The SDK's create endpoint RETURNS a PortalErrorResponse on HTTP 400 instead of raising
+    (sync/update raise instead), so every result is checked explicitly; never assume a call
+    that didn't raise worked."""
+    from cirro_api_client.v1.errors import BadRequestException
+    for wait in (*RETRY_WAITS_S, None):
+        try:
+            result = fn()
+        except BadRequestException as e:
+            result = e
+        if expected_type is None and result is None or \
+                expected_type is not None and isinstance(result, expected_type):
+            return result
+        if wait is None or REPO_THROTTLE_MSG not in str(result):
+            sys.exit(f"{what} failed: {result}")
+        print(f"       {what}: Cirro couldn't read the repo; retrying in {wait}s")
+        time.sleep(wait)
 
 
 def load_definitions():
@@ -148,7 +170,7 @@ def main():
                 continue
             print(f"sync   {pid}")
             if args.apply:
-                check(cirro.processes.sync_custom_process(pid), CustomPipelineSettings, f"sync {pid}")
+                call(lambda: cirro.processes.sync_custom_process(pid), CustomPipelineSettings, f"sync {pid}")
             continue
 
         children = [c for c in d["childProcessIds"] if c in existing]
@@ -163,12 +185,13 @@ def main():
         if args.apply:
             body = build_input(d, project_id, children)
             if is_new:
-                check(cirro.processes.create_custom_process(body), CreateResponse, f"create {pid}")
+                call(lambda: cirro.processes.create_custom_process(body), CreateResponse, f"create {pid}")
                 if not process_exists(cirro, pid):
                     sys.exit(f"create {pid} reported success but the process doesn't exist")
             else:
-                cirro.processes.update_custom_process(pid, body)  # raises on 400/403/404
-            check(cirro.processes.sync_custom_process(pid), CustomPipelineSettings, f"sync {pid}")
+                call(lambda: cirro.processes.update_custom_process(pid, body), None, f"update {pid}")
+            call(lambda: cirro.processes.sync_custom_process(pid), CustomPipelineSettings, f"sync {pid}")
+            time.sleep(PAUSE_BETWEEN_PIPELINES_S)
         existing.add(pid)  # later stages can now name it as a parent/child
 
     # A stage listing a LATER stage as its child (e.g. segment -> quantify) was created
@@ -176,8 +199,9 @@ def main():
     for pid, d in deferred_children.items():
         print(f"link   {pid} -> children {d['childProcessIds']}")
         if args.apply:
-            cirro.processes.update_custom_process(pid, build_input(d, project_id, d["childProcessIds"]))
-            check(cirro.processes.sync_custom_process(pid), CustomPipelineSettings, f"sync {pid}")
+            body = build_input(d, project_id, d["childProcessIds"])
+            call(lambda: cirro.processes.update_custom_process(pid, body), None, f"update {pid}")
+            call(lambda: cirro.processes.sync_custom_process(pid), CustomPipelineSettings, f"sync {pid}")
 
     print("\nDone." if args.apply else "\nDry run only; nothing was changed.")
 
