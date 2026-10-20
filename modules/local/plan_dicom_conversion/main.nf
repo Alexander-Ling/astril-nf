@@ -20,7 +20,11 @@ process PLAN_DICOM_CONVERSION {
     input:
     path organized_dir, stageAs: 'organized_dicoms'
     path dicom_index
-    path organized_dir_root_file
+    // Staged under a DIFFERENT name than this task's own organized_dicoms_root.txt output:
+    // inputs are symlinks to the upstream files, so writing the output under the input's name
+    // would overwrite Stage 0's published root marker through the link, and every later plan
+    // run against that Stage 0 output would rewrite nothing and produce an empty plan.
+    path organized_dir_root_file, stageAs: 'upstream_organized_dicoms_root.txt'
     path patient_metadata
 
     output:

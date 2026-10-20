@@ -16,8 +16,10 @@ process CONVERT_DICOM_PLAN {
     input:
     path organized_dir, stageAs: 'organized_dicoms'
     path plan
-    path organized_dir_root_file
-    path nifti_dir_root_file
+    // Distinct staging names: when a run starts here without them, both are the same
+    // NO_ROOT_OVERRIDE placeholder file, which Nextflow rejects as an input name collision.
+    path organized_dir_root_file, stageAs: 'upstream_organized_dicoms_root.txt'
+    path nifti_dir_root_file,     stageAs: 'upstream_nifti_root.txt'
 
     output:
     path 'nifti_out',        emit: nifti_dir
@@ -46,6 +48,11 @@ process CONVERT_DICOM_PLAN {
                 --rewrite "proposed_nifti_path=\${OLD_NIFTI_ROOT}::\$PWD/nifti_out" \\
                 --rewrite "PrimarySeriesPath=\${OLD_NIFTI_ROOT}::\$PWD/nifti_out"
         fi
+
+        # astril writes no log at all for an empty plan, which would otherwise surface only as a
+        # confusing "missing output convert_log.csv". An empty plan usually means Stage 1a found
+        # no series to plan, e.g. a metadata table or index that doesn't match the organized tree.
+        python -c "import csv, sys; sys.exit(0 if any(True for _ in csv.DictReader(open(sys.argv[1]))) else 'The conversion plan has no rows, so there is nothing to convert. Check that the patient metadata table and DICOM index match the organized DICOM tree used to plan.')" conversion_plan.rewritten.csv || exit 1
 
         python -m astril.preprocess convert_dicom_plan \\
             --plan conversion_plan.rewritten.csv \\
