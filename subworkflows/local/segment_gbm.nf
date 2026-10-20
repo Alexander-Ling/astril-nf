@@ -23,6 +23,9 @@ workflow SEGMENT {
         .flatMap { root -> findLeafDirsContaining(root, params.brainmask_pattern) }
         .map { examDir -> examDir.getParent() }
         .unique()
+        // An empty channel would otherwise skip segmentation AND quantify silently while the run
+        // still reports success.
+        .ifEmpty { error("No exam folders containing '${params.brainmask_pattern}' found in the preprocessed library -- nothing to segment.") }
 
     SEGMENT_GBM(patient_dirs, model_dir)
 

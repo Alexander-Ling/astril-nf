@@ -3,41 +3,67 @@
   "form": {
     "type": "object",
     "properties": {
+      "phi_confirmation": {
+        "type": "string",
+        "title": "PHI check (required)",
+        "description": "Data from before skull-stripping must never be real patient data on Cirro. Select to confirm.",
+        "enum": [
+          "I confirm the input contains NO PHI: it is de-identified, face-free test data (not real patient images)"
+        ]
+      },
+      "stop_after": {
+        "type": "string",
+        "title": "Stop after",
+        "description": "Every stage from this pipeline's starting point runs in one go, through quantification by default. Stop earlier to review or edit an intermediate result (e.g. the conversion plan, or masks before quantifying), then continue from that dataset with the matching 'Run from ...' pipeline.",
+        "enum": [
+          "preprocess",
+          "segment",
+          "quantify"
+        ],
+        "enumNames": [
+          "Preprocess (register / skull-strip / normalize)",
+          "Segment",
+          "Quantify volumes"
+        ],
+        "default": "quantify"
+      },
       "prior_preprocessed_dataset": {
         "type": "string",
-        "title": "Prior preprocessed library (optional)",
-        "description": "Leave blank for a first-time run. To add new exams to an existing library without changing any patient's reference space, select that library's previous 'astril - Preprocess MRI' dataset here.",
+        "title": "Preprocess: prior preprocessed library (optional, test data only)",
+        "description": "Leave blank for a first-time run. To add new exams to an existing library without changing any patient's reference space, select the dataset of an earlier run that preprocessed it. That dataset carries the raw whole-head input images (_raw_passthrough) needed to rebuild the library, so incremental preprocessing of real patient data must be done locally, not on Cirro.",
         "pathType": "dataset",
         "process": [
+          "process-astril-plan-conversion-1-0",
+          "process-astril-convert-1-0",
           "process-astril-preprocess-1-0"
         ]
       },
       "preprocess_n_workers": {
         "type": "integer",
-        "title": "Parallel workers",
+        "title": "Preprocess: parallel workers",
         "description": "Exam-level parallelism within this run. Also sets the compute request: this many CPUs, and this many x 'Memory per worker' GB, unless 'Total memory override' is set. The default (14 workers x 4 GB = 56 GB) fits a g5.4xlarge (16 vCPU / 64 GiB); going above that moves the task to a larger, more expensive instance.",
         "default": 14
       },
       "preprocess_memory_gb_per_worker": {
         "type": "integer",
-        "title": "Memory per worker (GB)",
+        "title": "Preprocess: memory per worker (GB)",
         "description": "astril doesn't budget memory itself -- this is a starting heuristic, not a measured figure. Tune against your own data if runs OOM-kill (exit 137) or over-provision.",
         "default": 4
       },
       "preprocess_memory_gb": {
         "type": "integer",
-        "title": "Total memory override (GB)",
+        "title": "Preprocess: total memory override (GB)",
         "description": "Leave blank to auto-compute as parallel workers x memory per worker. If set too low for the worker count, a warning is logged before the run starts."
       },
       "anchor_label": {
         "type": "string",
-        "title": "Anchor modality",
+        "title": "Preprocess: anchor modality",
         "description": "Modality co-registration and skull-stripping are anchored to.",
         "default": "T1c"
       },
       "registration_strategy": {
         "type": "string",
-        "title": "Registration strategy",
+        "title": "Preprocess: registration strategy",
         "enum": [
           "fast",
           "medium",
@@ -47,7 +73,7 @@
       },
       "normalization_method": {
         "type": "string",
-        "title": "Intensity normalization method",
+        "title": "Preprocess: intensity normalization method",
         "enum": [
           "robust_zscore",
           "zscore"
@@ -56,35 +82,93 @@
       },
       "final_dims": {
         "type": "string",
-        "title": "Final voxel grid (NX,NY,NZ)",
+        "title": "Preprocess: final voxel grid (NX,NY,NZ)",
         "default": "240,240,155"
       },
       "final_voxels": {
         "type": "string",
-        "title": "Final voxel spacing mm (SX,SY,SZ)",
+        "title": "Preprocess: final voxel spacing mm (SX,SY,SZ)",
         "default": "1.0,1.0,1.0"
       },
       "use_gpu": {
         "type": "boolean",
-        "title": "Use GPU for skull-stripping (HD-BET)",
+        "title": "Preprocess: use GPU for skull-stripping (HD-BET)",
         "default": true
       },
       "enable_tta": {
         "type": "boolean",
-        "title": "Enable HD-BET test-time augmentation",
+        "title": "Preprocess: enable HD-BET test-time augmentation",
         "description": "Improves mask quality; recommended when GPU is available.",
         "default": true
       },
       "generate_qc": {
         "type": "boolean",
-        "title": "Generate QC PDFs",
+        "title": "Preprocess: generate QC PDFs",
         "default": true
       },
       "preprocess_overwrite": {
         "type": "boolean",
-        "title": "Overwrite existing preprocessed outputs",
+        "title": "Preprocess: overwrite existing preprocessed outputs",
         "default": false
+      },
+      "model_dataset": {
+        "type": "string",
+        "title": "Segment: custom model (optional)",
+        "description": "Leave blank to use 'Model family' below. To run a self-trained model not published through astril's model manifest, upload its directory (its pipeline.json plus checkpoints) as a 'Files' dataset and select it here -- it then takes precedence over 'Model family'.",
+        "pathType": "dataset",
+        "process": [
+          "custom_dataset"
+        ]
+      },
+      "model_family": {
+        "type": "string",
+        "title": "Segment: model family",
+        "description": "A model family registered in astril's models.json. Ignored if a custom model is selected above. This dropdown is a static list, not a live registry lookup -- add a new family here by hand when one is added to astril's models.json.",
+        "enum": [
+          "GBM_seg_v2"
+        ],
+        "default": "GBM_seg_v2"
+      },
+      "slice_batch_size": {
+        "type": "integer",
+        "title": "Segment: slice batch size",
+        "description": "Memory/throughput tradeoff for 2.5D inference.",
+        "default": 1
+      },
+      "brainmask_pattern": {
+        "type": "string",
+        "title": "Segment: brainmask filename pattern",
+        "default": "_brainmask.nii.gz"
+      },
+      "segment_overwrite": {
+        "type": "boolean",
+        "title": "Segment: overwrite existing segmentation outputs",
+        "default": false
+      },
+      "seg_filename_pattern": {
+        "type": "string",
+        "title": "Segmentation filename pattern",
+        "description": "Suffix segmentation writes, and quantify looks for.",
+        "default": "_GBM-seg.nii.gz"
+      },
+      "labels_json_dataset": {
+        "type": "string",
+        "title": "Quantify: labels contract (optional)",
+        "description": "Rarely needed: masks produced by this pipeline's segmentation carry their labels in a segmentation_provenance.json sidecar. Needed only for masks without one (e.g. produced elsewhere) when 'Number of segmentation levels' isn't set: upload a labels.json ({\"labels\": {\"1\": \"...\", ...}}) as a 'Files' dataset (exactly one .json) and select it here.",
+        "pathType": "dataset",
+        "process": [
+          "custom_dataset"
+        ]
+      },
+      "quantify_n_threads": {
+        "type": "integer",
+        "title": "Quantify: threads",
+        "description": "File I/O parallelism across the whole run. Leave blank to use the task's allocated CPU count (recommended); set only to override."
       }
-    }
+    },
+    "description": "PHI WARNING: this pipeline starts from data BEFORE skull-stripping (DICOM or whole-head NIfTI). Real patient data at this point contains PHI -- DICOM headers, and identifiable faces in the image data itself -- and must NOT be uploaded to Cirro. Use these entry points only with de-identified, face-free test data. For real patients, run stages up to preprocessing locally (see the astril-nf README), upload the face-free 02-preprocess/upload_preprocessed/ folder, and start at 'astril - Run from preprocessed images'.",
+    "required": [
+      "phi_confirmation"
+    ]
   }
 }

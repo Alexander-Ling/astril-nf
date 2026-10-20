@@ -4,8 +4,8 @@
     "process-astril-organize-1-0"
   ],
   "childProcessIds": [],
-  "name": "astril - Plan DICOM to NIfTI conversion",
-  "desc": "Stage 1a - classify DICOM series and propose an editable DICOM-to-NIfTI conversion plan, using the user-filled-in patient metadata table from Stage 0. Review/edit the resulting plan before running Stage 1b. Versions: astril-nf 0.1.0, astril 0.7.30.",
+  "name": "astril - Run from patient metadata (test data only)",
+  "desc": "TEST DATA ONLY: input is pre-skull-strip (DICOM headers, faces) and real patient data here is PHI. Plans DICOM to NIfTI conversion from the filled-in metadata table, then converts, preprocesses, segments and quantifies in one run. Use 'Stop after' = Plan conversion to review or edit the plan first, then continue with 'astril - Run from conversion plan'. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",
@@ -25,5 +25,7 @@
   ],
   "paramMapJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-input.json",
   "formJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-form.json",
-  "preProcessScript": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/preprocess.py"
+  "preProcessScript": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/preprocess.py",
+  "fileRequirementsMessage": "PHI WARNING: upload only de-identified, face-free TEST data here. Real patient DICOM or NIfTI contains PHI (headers, identifiable faces) and must not be uploaded to Cirro; run those stages locally and upload 02-preprocess/upload_preprocessed/ instead. Input: an 'astril - Organize DICOM' dataset; select the filled-in metadata table in the form.",
+  "webOptimizationJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-output.json"
 }

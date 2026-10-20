@@ -2,6 +2,8 @@
   "stage": "preprocess",
   "outdir": "$.dataset.dataPath",
   "nifti_dir": "$.inputs[0].dataPath",
+  "phi_confirmation": "$.dataset.params.phi_confirmation",
+  "stop_after": "$.dataset.params.stop_after",
   "prior_preprocessed_dataset": "$.dataset.params.prior_preprocessed_dataset",
   "preprocess_n_workers": "$.dataset.params.preprocess_n_workers",
   "preprocess_memory_gb_per_worker": "$.dataset.params.preprocess_memory_gb_per_worker",
@@ -14,5 +16,13 @@
   "use_gpu": "$.dataset.params.use_gpu",
   "enable_tta": "$.dataset.params.enable_tta",
   "generate_qc": "$.dataset.params.generate_qc",
-  "preprocess_overwrite": "$.dataset.params.preprocess_overwrite"
+  "preprocess_overwrite": "$.dataset.params.preprocess_overwrite",
+  "model_dataset": "$.dataset.params.model_dataset",
+  "model_family": "$.dataset.params.model_family",
+  "slice_batch_size": "$.dataset.params.slice_batch_size",
+  "brainmask_pattern": "$.dataset.params.brainmask_pattern",
+  "segment_overwrite": "$.dataset.params.segment_overwrite",
+  "seg_filename_pattern": "$.dataset.params.seg_filename_pattern",
+  "labels_json_dataset": "$.dataset.params.labels_json_dataset",
+  "quantify_n_threads": "$.dataset.params.quantify_n_threads"
 }

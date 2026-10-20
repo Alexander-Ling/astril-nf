@@ -2,5 +2,6 @@
   "stage": "organize",
   "outdir": "$.dataset.dataPath",
   "dicom_dir": "$.inputs[0].dataPath",
+  "phi_confirmation": "$.dataset.params.phi_confirmation",
   "organize_n_workers": "$.dataset.params.organize_n_workers"
 }

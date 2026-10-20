@@ -4,8 +4,8 @@
     "custom_dataset"
   ],
   "childProcessIds": [],
-  "name": "astril - Organize DICOM library",
-  "desc": "Stage 0 - route an arbitrary DICOM library into astril's structured Patient/Exam/Series tree, build a DICOM index, and generate a blank per-patient metadata table for the user to fill in before Stage 1a. Versions: astril-nf 0.1.0, astril 0.7.30.",
+  "name": "astril - Organize DICOM (de-identified test data only)",
+  "desc": "TEST DATA ONLY: input is pre-skull-strip (DICOM headers, faces) and real patient data here is PHI. Stage 0: sort a DICOM library into Patient/Exam/Series, index it, and write a blank patient metadata table. Fill that table in, upload it, then continue with 'astril - Run from patient metadata'. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",
@@ -24,5 +24,7 @@
     }
   ],
   "paramMapJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-input.json",
-  "formJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-form.json"
+  "formJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-form.json",
+  "fileRequirementsMessage": "PHI WARNING: upload only de-identified, face-free TEST data here. Real patient DICOM or NIfTI contains PHI (headers, identifiable faces) and must not be uploaded to Cirro; run those stages locally and upload 02-preprocess/upload_preprocessed/ instead. Expected: a 'Files' upload of a folder of DICOM files (any layout).",
+  "preProcessScript": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/preprocess.py"
 }

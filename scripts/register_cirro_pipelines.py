@@ -116,6 +116,8 @@ def build_input(d, project_id, child_ids):
         linked_project_ids=[project_id],
         category=d["category"],
         documentation_url=d["documentationUrl"],
+        # Upload guidance Cirro shows for this pipeline's input; carries the PHI warning.
+        file_requirements_message=d["fileRequirementsMessage"],
         is_tenant_wide=False,
         allow_multiple_sources=False,
         uses_sample_sheet=False,

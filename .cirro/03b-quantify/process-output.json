@@ -14,12 +14,36 @@
           }
         },
         "cols": [
-          { "col": "File_path", "name": "File path", "desc": "Full path to the segmentation file this row was computed from" },
-          { "col": "File_name", "name": "File name", "desc": "Segmentation file name" },
-          { "col": "necrosis_non_enhancing_tumor_Volume_mm3", "name": "Necrosis / non-enhancing tumor volume (mm3)", "desc": "GBM_seg_v2 label 1" },
-          { "col": "edema_non_flair_hyperintensity_Volume_mm3", "name": "Edema volume (mm3)", "desc": "GBM_seg_v2 label 2: edema / surrounding non-FLAIR hyperintensity" },
-          { "col": "enhancing_tumor_tissue_Volume_mm3", "name": "Enhancing tumor volume (mm3)", "desc": "GBM_seg_v2 label 3: enhancing tumor / tissue" },
-          { "col": "resection_cavity_Volume_mm3", "name": "Resection cavity volume (mm3)", "desc": "GBM_seg_v2 label 4: resection cavity" }
+          {
+            "col": "File_path",
+            "name": "File path",
+            "desc": "Full path to the segmentation file this row was computed from"
+          },
+          {
+            "col": "File_name",
+            "name": "File name",
+            "desc": "Segmentation file name"
+          },
+          {
+            "col": "necrosis_non_enhancing_tumor_Volume_mm3",
+            "name": "Necrosis / non-enhancing tumor volume (mm3)",
+            "desc": "GBM_seg_v2 label 1"
+          },
+          {
+            "col": "edema_non_flair_hyperintensity_Volume_mm3",
+            "name": "Edema volume (mm3)",
+            "desc": "GBM_seg_v2 label 2: edema / surrounding non-FLAIR hyperintensity"
+          },
+          {
+            "col": "enhancing_tumor_tissue_Volume_mm3",
+            "name": "Enhancing tumor volume (mm3)",
+            "desc": "GBM_seg_v2 label 3: enhancing tumor / tissue"
+          },
+          {
+            "col": "resection_cavity_Volume_mm3",
+            "name": "Resection cavity volume (mm3)",
+            "desc": "GBM_seg_v2 label 4: resection cavity"
+          }
         ]
       }
     },

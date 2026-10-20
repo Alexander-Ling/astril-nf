@@ -1,12 +1,13 @@
 {
   "id": "process-astril-preprocess-1-0",
   "parentProcessIds": [
+    "process-astril-plan-conversion-1-0",
     "process-astril-convert-1-0",
     "custom_dataset"
   ],
   "childProcessIds": [],
-  "name": "astril - Preprocess MRI (register/skull-strip/normalize)",
-  "desc": "Stage 2 - co-register, skull-strip (HD-BET), and intensity-normalize a NIfTI library, producing an aligned, skull-stripped preprocessed library. Optionally continues an existing preprocessed library (select it in the 'Prior preprocessed library' field) -- new exams for already-known patients are registered into the SAME reference space chosen previously, never a re-picked one. QC PDFs are an optional extra output. Versions: astril-nf 0.1.0, astril 0.7.30.",
+  "name": "astril - Run from NIfTI (face-free test data only)",
+  "desc": "TEST DATA ONLY: input is pre-skull-strip (DICOM headers, faces) and real patient data here is PHI. Co-registers, skull-strips (HD-BET) and normalizes a NIfTI library, then segments and quantifies. Writes the face-free upload set 02-preprocess/upload_preprocessed/. For real patients run this stage locally instead. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",
@@ -26,5 +27,7 @@
   ],
   "paramMapJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-input.json",
   "formJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-form.json",
-  "preProcessScript": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/preprocess.py"
+  "preProcessScript": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/preprocess.py",
+  "fileRequirementsMessage": "PHI WARNING: upload only de-identified, face-free TEST data here. Real patient DICOM or NIfTI contains PHI (headers, identifiable faces) and must not be uploaded to Cirro; run those stages locally and upload 02-preprocess/upload_preprocessed/ instead. Direct upload layout: {patient}/{exam}/*.nii.gz (+ .json sidecars) with patient folders at the top level.",
+  "webOptimizationJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-output.json"
 }

@@ -1,12 +1,15 @@
 {
   "id": "process-astril-quantify-1-0",
   "parentProcessIds": [
+    "process-astril-plan-conversion-1-0",
+    "process-astril-convert-1-0",
+    "process-astril-preprocess-1-0",
     "process-astril-segment-1-0",
     "custom_dataset"
   ],
   "childProcessIds": [],
-  "name": "astril - Quantify segmentation volumes",
-  "desc": "Stage 3b - per-class segmentation volumes (mm3) from a set of segmentation masks. Runs automatically as part of Stage 3a (segment) by default; register/run this separately to re-quantify a manually corrected or replacement set of masks (optionally merging multiple segmentation sources first) without re-running segmentation. Versions: astril-nf 0.1.0, astril 0.7.30.",
+  "name": "astril - Quantify segmentation masks",
+  "desc": "Per-class segmentation volumes (mm3) from a set of masks, e.g. after correcting a segmentation run's masks by hand, optionally merging several mask sources per exam first. Segmentation runs already quantify automatically. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",
@@ -26,5 +29,7 @@
   ],
   "paramMapJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-input.json",
   "formJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-form.json",
-  "webOptimizationJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-output.json"
+  "webOptimizationJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-output.json",
+  "fileRequirementsMessage": "Masks in {patient}/{exam}/ folders (or flat). Upload masks and skull-stripped images only -- never raw DICOM/NIfTI or anything not skull-stripped (PHI).",
+  "preProcessScript": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/preprocess.py"
 }

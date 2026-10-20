@@ -3,11 +3,23 @@
   "form": {
     "type": "object",
     "properties": {
+      "phi_confirmation": {
+        "type": "string",
+        "title": "PHI check (required)",
+        "description": "Data from before skull-stripping must never be real patient data on Cirro. Select to confirm.",
+        "enum": [
+          "I confirm the input contains NO PHI: it is de-identified, face-free test data (not real patient images)"
+        ]
+      },
       "organize_n_workers": {
         "type": "integer",
-        "title": "Parallel workers",
+        "title": "Organize/plan: parallel workers",
         "description": "Threads for DICOM metadata reads/copies (I/O bound). Leave blank to use the task's allocated CPU count (recommended); set only to override."
       }
-    }
+    },
+    "description": "PHI WARNING: this pipeline starts from data BEFORE skull-stripping (DICOM or whole-head NIfTI). Real patient data at this point contains PHI -- DICOM headers, and identifiable faces in the image data itself -- and must NOT be uploaded to Cirro. Use these entry points only with de-identified, face-free test data. For real patients, run stages up to preprocessing locally (see the astril-nf README), upload the face-free 02-preprocess/upload_preprocessed/ folder, and start at 'astril - Run from preprocessed images'.",
+    "required": [
+      "phi_confirmation"
+    ]
   }
 }

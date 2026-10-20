@@ -3,44 +3,45 @@
   "form": {
     "type": "object",
     "properties": {
-      "seg_filename_pattern": {
-        "type": "string",
-        "title": "Segmentation filename pattern",
-        "default": "_GBM-seg.nii.gz"
-      },
       "total_levels": {
         "type": "integer",
-        "title": "Number of segmentation levels to quantify (optional)",
-        "description": "Levels 1..N, generically named. Not needed if 'Labels contract' below is set, or if the input masks already carry a segmentation_provenance.json sidecar (Stage 3a segment output does, automatically). One of the three is required."
-      },
-      "labels_json_dataset": {
-        "type": "string",
-        "title": "Labels contract (optional)",
-        "description": "Only needed when quantifying masks that have no segmentation_provenance.json sidecar (e.g. masks produced outside this pipeline). Upload a labels.json ({\"labels\": {\"1\": \"...\", ...}}) as a 'Files' dataset (exactly one .json) and select it here.",
-        "pathType": "dataset",
-        "process": [
-          "custom_dataset"
-        ]
+        "title": "Quantify: number of segmentation levels (optional)",
+        "description": "Levels 1..N, generically named. Not needed if 'Labels contract' is set, or if the masks carry a segmentation_provenance.json sidecar (this pipeline's segmentation output does). One of the three is required."
       },
       "merge_before_quantify": {
         "type": "boolean",
-        "title": "Merge multiple segmentation sources first",
+        "title": "Quantify: merge multiple segmentation sources first",
         "description": "Enable if supplying more than one segmentation per exam (e.g. model output plus a manual correction).",
         "default": false
       },
       "merge_input_patterns": {
         "type": "string",
-        "title": "Merge input patterns (comma-separated, priority order)",
+        "title": "Quantify: merge input patterns (comma-separated, priority order)",
         "description": "Required if merging; e.g. '_GBM-seg.nii.gz,_manual-seg.nii.gz'."
       },
       "merge_output_pattern": {
         "type": "string",
-        "title": "Merged output filename pattern",
+        "title": "Quantify: merged output filename pattern",
         "default": "_merged-seg.nii.gz"
+      },
+      "seg_filename_pattern": {
+        "type": "string",
+        "title": "Segmentation filename pattern",
+        "description": "Suffix segmentation writes, and quantify looks for.",
+        "default": "_GBM-seg.nii.gz"
+      },
+      "labels_json_dataset": {
+        "type": "string",
+        "title": "Quantify: labels contract (optional)",
+        "description": "Rarely needed: masks produced by this pipeline's segmentation carry their labels in a segmentation_provenance.json sidecar. Needed only for masks without one (e.g. produced elsewhere) when 'Number of segmentation levels' isn't set: upload a labels.json ({\"labels\": {\"1\": \"...\", ...}}) as a 'Files' dataset (exactly one .json) and select it here.",
+        "pathType": "dataset",
+        "process": [
+          "custom_dataset"
+        ]
       },
       "quantify_n_threads": {
         "type": "integer",
-        "title": "Threads (file I/O parallelism across the whole run)",
+        "title": "Quantify: threads",
         "description": "File I/O parallelism across the whole run. Leave blank to use the task's allocated CPU count (recommended); set only to override."
       }
     }

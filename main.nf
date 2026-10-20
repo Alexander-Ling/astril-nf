@@ -1,9 +1,10 @@
 #!/usr/bin/env nextflow
 /*
- * astril-nf: DICOM ingestion, MRI preprocessing, and GBM segmentation for astril, packaged to
- * run stage-by-stage in Cirro. Model training is out of scope. See README.md for the full
- * per-stage data contracts (each stage after Stage 0 accepts either the upstream stage's
- * output or a direct upload conforming to astril's own directory/file-naming conventions).
+ * astril-nf: DICOM ingestion, MRI preprocessing, and GBM segmentation for astril, packaged for
+ * local runs and Cirro. Model training is out of scope. A run starts at any stage (--stage) and
+ * continues through --stop_after; see README.md for the per-stage data contracts (each stage
+ * after Stage 0 accepts either the upstream stage's output or a direct upload conforming to
+ * astril's own directory/file-naming conventions).
  */
 nextflow.enable.dsl = 2
 
@@ -55,31 +56,84 @@ def optionalRootFile(name) {
     return Channel.value(f)
 }
 
+// --stage is where a run STARTS; it then continues through every later stage up to and
+// including --stop_after (default: quantify), handing each stage's output straight to the next.
+// Every stage still publishes its own outputs under its own NN-<stage>/ folder, so any of them
+// can be a later run's starting point (e.g. re-entering at convert with a hand-edited plan).
+// Organize is the exception: Stage 1a needs the patient metadata table a person fills in from
+// Stage 0's output, so a run starting at organize always stops there.
+def stages() {
+    return ['organize', 'plan_convert', 'convert', 'preprocess', 'segment', 'quantify']
+}
+
+def stopAfter() {
+    return params.stop_after ?: (params.stage == 'organize' ? 'organize' : 'quantify')
+}
+
+// Whether stage s is part of this run.
+def runs(s) {
+    def i = stages().indexOf(s)
+    return stages().indexOf(params.stage) <= i && i <= stages().indexOf(stopAfter())
+}
+
+// Whether this run starts at stage s (so s reads its inputs from params, not an upstream stage).
+def starts(s) {
+    return params.stage == s
+}
+
 workflow {
-    if (!params.stage) {
-        exit 1, "Specify --stage one of: organize | plan_convert | convert | preprocess | segment | quantify"
+    def STAGES = stages()
+    if (!(params.stage in STAGES)) {
+        exit 1, "Specify --stage, one of: ${STAGES.join(' | ')} (got '${params.stage}')"
+    }
+    if (!(stopAfter() in STAGES) || STAGES.indexOf(stopAfter()) < STAGES.indexOf(params.stage)) {
+        exit 1, "--stop_after must be --stage itself or a later stage, one of: " +
+            "${STAGES.subList(STAGES.indexOf(params.stage), STAGES.size()).join(' | ')} (got '${stopAfter()}')"
+    }
+    if (params.stage == 'organize' && stopAfter() != 'organize') {
+        exit 1, "A run starting at organize always stops there: fill in its " +
+            "patient_metadata_blank.csv, then start the next run at --stage plan_convert."
     }
 
-    if (params.stage == 'organize') {
+    if (params.merge_before_quantify && !starts('quantify')) {
+        exit 1, "--merge_before_quantify overlays multiple segmentation sources for a single, " +
+            "already-fixed set of exams -- it's for runs starting at --stage quantify " +
+            "(re-quantifying a manually-edited/replacement mask set), not the quantify that " +
+            "follows segmentation within the same run."
+    }
+
+    if (runs('organize')) {
         ORGANIZE_DICOM(requireParam('dicom_dir'))
     }
-    else if (params.stage == 'plan_convert') {
+
+    def plan_ch = null
+    def organized_root_ch = null
+    def nifti_root_ch = null
+    if (runs('plan_convert')) {
         PLAN_CONVERSION(
             requireParam('organized_dir'),
             requireParam('dicom_index'),
             optionalRootFile('organized_dir_root'),
             requireParam('patient_metadata')
         )
+        plan_ch           = PLAN_CONVERSION.out.plan
+        organized_root_ch = PLAN_CONVERSION.out.organized_dir_root
+        nifti_root_ch     = PLAN_CONVERSION.out.nifti_dir_root
     }
-    else if (params.stage == 'convert') {
+
+    def nifti_ch = null
+    if (runs('convert')) {
         CONVERT_DICOM(
             requireParam('organized_dir'),
-            requireParam('conversion_plan'),
-            optionalRootFile('organized_dir_root'),
-            optionalRootFile('nifti_dir_root')
+            starts('convert') ? requireParam('conversion_plan')               : plan_ch,
+            starts('convert') ? optionalRootFile('organized_dir_root')        : organized_root_ch,
+            starts('convert') ? optionalRootFile('nifti_dir_root')            : nifti_root_ch
         )
+        nifti_ch = CONVERT_DICOM.out.nifti_dir
     }
-    else if (params.stage == 'preprocess') {
+
+    def preprocessed_ch = null
+    if (runs('preprocess')) {
         // astril doesn't budget memory itself (only CPU thread counts, per worker), so a
         // manual preprocess_memory_gb override that looks too low for the requested worker
         // count is worth a warning here -- an OOM kill (exit 137) part-way through a real run
@@ -105,15 +159,15 @@ workflow {
         prior_ch = params.prior_preprocessed_dir
             ? Channel.value(file(params.prior_preprocessed_dir, checkIfExists: true))
             : Channel.value(noPriorLibrary())
-        PREPROCESS_MRI(requireParam('nifti_dir'), prior_ch)
+        PREPROCESS_MRI(starts('preprocess') ? requireParam('nifti_dir') : nifti_ch, prior_ch)
+        // Segment from the face-free export, not the full library, so a chained run exercises
+        // exactly the files a user would upload to start at segment (see
+        // modules/local/export_face_free_library).
+        preprocessed_ch = PREPROCESS_MRI.out.export_dir
     }
-    else if (params.stage == 'segment') {
-        // Stage 3b (quantify) now runs automatically right after Stage 3a (segment) by default --
-        // the two have a well-defined contract between them (segmentation_provenance.json) that
-        // makes chaining them the normal case. Pass --skip_quantify to stop after segmentation
-        // alone, e.g. to manually correct masks before quantifying; re-enter quantification on
-        // its own afterward with --stage quantify --seg_dir <corrected masks>.
-        //
+
+    def segmented_ch = null
+    if (runs('segment')) {
         // --model_dir (a self-trained model not published through astril's model manifest) takes
         // precedence over --model_family when both happen to be set, since Nextflow can't
         // distinguish "left at its default" from "explicitly set to the default" -- the module
@@ -121,24 +175,11 @@ workflow {
         model_dir_ch = params.model_dir
             ? Channel.value(file(params.model_dir, checkIfExists: true))
             : Channel.value(noModelDir())
-        SEGMENT(requireParam('preprocessed_dir'), model_dir_ch)
+        SEGMENT(starts('segment') ? requireParam('preprocessed_dir') : preprocessed_ch, model_dir_ch)
+        segmented_ch = SEGMENT.out.segmented.map { _name, dir -> dir }.collect()
+    }
 
-        if (!params.skip_quantify) {
-            if (params.merge_before_quantify) {
-                exit 1, "--merge_before_quantify overlays multiple segmentation sources for a " +
-                    "single, already-fixed set of exams -- it's for the standalone --stage " +
-                    "quantify entry point (re-quantifying a manually-edited/replacement mask " +
-                    "set), not the automatic quantify that runs right after --stage segment. " +
-                    "Pass --skip_quantify here and run --stage quantify separately if you need it."
-            }
-            seg_for_quantify = SEGMENT.out.segmented.map { _name, dir -> dir }.collect()
-            QUANTIFY(seg_for_quantify, labelsJsonChannel())
-        }
-    }
-    else if (params.stage == 'quantify') {
-        QUANTIFY(requireParam('seg_dir'), labelsJsonChannel())
-    }
-    else {
-        exit 1, "Unknown --stage '${params.stage}'. Expected one of: organize | plan_convert | convert | preprocess | segment | quantify"
+    if (runs('quantify')) {
+        QUANTIFY(starts('quantify') ? requireParam('seg_dir') : segmented_ch, labelsJsonChannel())
     }
 }

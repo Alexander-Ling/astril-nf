@@ -1,14 +1,14 @@
 {
   "id": "process-astril-segment-1-0",
   "parentProcessIds": [
+    "process-astril-plan-conversion-1-0",
+    "process-astril-convert-1-0",
     "process-astril-preprocess-1-0",
     "custom_dataset"
   ],
-  "childProcessIds": [
-    "process-astril-quantify-1-0"
-  ],
-  "name": "astril - GBM segmentation",
-  "desc": "Stage 3a - segmentation inference over a preprocessed NIfTI library. Pick a model family from the dropdown (GBM_seg_v2 labels: 1=necrosis/non-enhancing tumor, 2=edema/non-FLAIR hyperintensity, 3=enhancing tumor/tissue, 4=resection cavity), or select an uploaded model directory in 'Custom model' (overrides the dropdown). Stage 3b (quantify) runs automatically afterwards; enable 'Skip automatic quantify' to correct masks manually first. Versions: astril-nf 0.1.0, astril 0.7.30.",
+  "childProcessIds": [],
+  "name": "astril - Run from preprocessed images",
+  "desc": "The normal entry point for real patient data. Segments a face-free preprocessed library (GBM_seg_v2 labels: 1=necrosis/non-enhancing tumor, 2=edema, 3=enhancing tumor, 4=resection cavity; or a custom model) and quantifies volumes. Upload the 02-preprocess/upload_preprocessed/ folder written by local preprocessing. Inputs holding un-skull-stripped images are refused. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",
@@ -28,5 +28,7 @@
   ],
   "paramMapJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-input.json",
   "formJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-form.json",
-  "preProcessScript": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/preprocess.py"
+  "preProcessScript": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/preprocess.py",
+  "fileRequirementsMessage": "Upload ONLY the face-free 02-preprocess/upload_preprocessed/ folder written by local preprocessing ({patient}/{exam}/*_brain-norm.nii.gz, *_brain.nii.gz, *_brainmask.nii.gz). Never upload raw DICOM/NIfTI, the full preprocessed_library/ (it contains _raw_passthrough/ whole-head copies), or anything not skull-stripped.",
+  "webOptimizationJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-output.json"
 }

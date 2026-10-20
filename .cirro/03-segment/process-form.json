@@ -3,9 +3,23 @@
   "form": {
     "type": "object",
     "properties": {
+      "stop_after": {
+        "type": "string",
+        "title": "Stop after",
+        "description": "Every stage from this pipeline's starting point runs in one go, through quantification by default. Stop earlier to review or edit an intermediate result (e.g. the conversion plan, or masks before quantifying), then continue from that dataset with the matching 'Run from ...' pipeline.",
+        "enum": [
+          "segment",
+          "quantify"
+        ],
+        "enumNames": [
+          "Segment",
+          "Quantify volumes"
+        ],
+        "default": "quantify"
+      },
       "model_dataset": {
         "type": "string",
-        "title": "Custom model (optional)",
+        "title": "Segment: custom model (optional)",
         "description": "Leave blank to use 'Model family' below. To run a self-trained model not published through astril's model manifest, upload its directory (its pipeline.json plus checkpoints) as a 'Files' dataset and select it here -- it then takes precedence over 'Model family'.",
         "pathType": "dataset",
         "process": [
@@ -14,7 +28,7 @@
       },
       "model_family": {
         "type": "string",
-        "title": "Model family",
+        "title": "Segment: model family",
         "description": "A model family registered in astril's models.json. Ignored if a custom model is selected above. This dropdown is a static list, not a live registry lookup -- add a new family here by hand when one is added to astril's models.json.",
         "enum": [
           "GBM_seg_v2"
@@ -23,34 +37,39 @@
       },
       "slice_batch_size": {
         "type": "integer",
-        "title": "Slice batch size",
+        "title": "Segment: slice batch size",
         "description": "Memory/throughput tradeoff for 2.5D inference.",
         "default": 1
       },
       "brainmask_pattern": {
         "type": "string",
-        "title": "Brainmask filename pattern",
+        "title": "Segment: brainmask filename pattern",
         "default": "_brainmask.nii.gz"
       },
       "segment_overwrite": {
         "type": "boolean",
-        "title": "Overwrite existing segmentation outputs",
+        "title": "Segment: overwrite existing segmentation outputs",
         "default": false
       },
-      "skip_quantify": {
-        "type": "boolean",
-        "title": "Skip automatic quantify",
-        "description": "Stage 3b (quantify) normally runs automatically right after segmentation. Enable this to stop after segmentation alone -- e.g. to manually correct masks before quantifying -- then run the separate 'astril - Quantify segmentation volumes' process afterward.",
-        "default": false
+      "seg_filename_pattern": {
+        "type": "string",
+        "title": "Segmentation filename pattern",
+        "description": "Suffix segmentation writes, and quantify looks for.",
+        "default": "_GBM-seg.nii.gz"
       },
       "labels_json_dataset": {
         "type": "string",
-        "title": "Labels contract (optional, for automatic quantify)",
-        "description": "Rarely needed: the model's own pipeline.json labels normally carry through to Stage 3b automatically via segmentation_provenance.json. To override, Upload a labels.json ({\"labels\": {\"1\": \"...\", ...}}) as a 'Files' dataset (exactly one .json) and select it here.",
+        "title": "Quantify: labels contract (optional)",
+        "description": "Rarely needed: masks produced by this pipeline's segmentation carry their labels in a segmentation_provenance.json sidecar. Needed only for masks without one (e.g. produced elsewhere) when 'Number of segmentation levels' isn't set: upload a labels.json ({\"labels\": {\"1\": \"...\", ...}}) as a 'Files' dataset (exactly one .json) and select it here.",
         "pathType": "dataset",
         "process": [
           "custom_dataset"
         ]
+      },
+      "quantify_n_threads": {
+        "type": "integer",
+        "title": "Quantify: threads",
+        "description": "File I/O parallelism across the whole run. Leave blank to use the task's allocated CPU count (recommended); set only to override."
       }
     }
   }

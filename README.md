@@ -1,9 +1,17 @@
 # astril-nf
 
 A Nextflow wrapper around [astril](https://github.com/Alexander-Ling/astril)'s DICOM ingestion, MRI
-preprocessing, and GBM segmentation, packaged to run as chained processes in
-[Cirro](https://cirro.bio). **Model training is explicitly out of scope** -- this pipeline covers
-astril's preprocessing and segmentation functionality only.
+preprocessing, and GBM segmentation, for local runs and for [Cirro](https://cirro.bio). **Model
+training is explicitly out of scope** -- this pipeline covers astril's preprocessing and
+segmentation functionality only.
+
+> **PHI: everything before skull-stripping is identifiable.** Raw DICOM, the organize/plan
+> outputs, and converted NIfTI all contain PHI -- DICOM headers, and faces in the image data
+> itself. Run Stages 0-2 **locally** on real patient data, and take only the face-free
+> `02-preprocess/upload_preprocessed/` folder off-site (e.g. to Cirro, starting at
+> "Run from preprocessed images"). The DICOM/NIfTI entry points exist on Cirro for completeness
+> and must only be used with de-identified, face-free test data. See "PHI and what is safe to
+> upload" below.
 
 Every Nextflow process here is a thin wrapper around astril's existing console scripts
 (`organize_dicoms`, `preprocess_brain_mris`, `segment`, `quantify-volumes`, etc.). Stage 3a uses
@@ -19,34 +27,87 @@ see "Model provenance and level labels" below.
 | 1a. Plan conversion | `plan_convert` | Classify DICOM series and propose an editable DICOM→NIfTI conversion plan, using your filled-in metadata table. **Review/edit the plan before Stage 1b.** |
 | 1b. Convert | `convert` | Execute the (optionally edited) plan, producing the NIfTI library. |
 | 2. Preprocess | `preprocess` | Co-register, skull-strip (HD-BET), and normalize a NIfTI library, via ONE `preprocess_brain_mris` call over the whole (merged) library -- astril itself selects every patient's reference before fanning out per exam internally (`--n_workers`), so Nextflow doesn't re-implement that. Supports incrementally merging new exams into an existing preprocessed library without changing a patient's already-assigned reference space. QC PDFs are an optional extra output. |
-| 3a. Segment | `segment` | Segmentation inference via a selected model (`--model_family GBM_seg_v2` by default, or `--model_dir` for a self-trained model), one Nextflow task per PATIENT (all of that patient's exams in one call, since the model's own pipeline loads its models once per invocation regardless of exam count -- fanning out per exam would reload them per exam for no benefit). Writes a `segmentation_provenance.json` sidecar next to each exam's output recording the model's identity and label meanings. **Automatically chains into Stage 3b** unless `--skip_quantify` is set. |
-| 3b. Quantify | `segment` (auto) or `quantify` (standalone) | Per-class segmentation volumes (mm³) for the whole segmentation tree in ONE `quantify-volumes` call, aggregated directly into one table (not fanned out per exam -- see Multi-threading below). Which levels to quantify comes from an explicit contract: `total_levels`, `labels_json`, or (automatically) each file's own `segmentation_provenance.json` sidecar from Stage 3a. Runs automatically right after Stage 3a by default; pass `--skip_quantify` to Stage 3a and re-enter with `--stage quantify --seg_dir ...` separately to quantify a manually corrected/replacement set of masks instead, with an optional merge-multiple-sources step first. |
+| 3a. Segment | `segment` | Segmentation inference via a selected model (`--model_family GBM_seg_v2` by default, or `--model_dir` for a self-trained model), one Nextflow task per PATIENT (all of that patient's exams in one call, since the model's own pipeline loads its models once per invocation regardless of exam count -- fanning out per exam would reload them per exam for no benefit). Writes a `segmentation_provenance.json` sidecar next to each exam's output recording the model's identity and label meanings. |
+| 3b. Quantify | `quantify` | Per-class segmentation volumes (mm³) for the whole segmentation tree in ONE `quantify-volumes` call, aggregated directly into one table (not fanned out per exam -- see Multi-threading below). Which levels to quantify comes from an explicit contract: `total_levels`, `labels_json`, or (automatically) each file's own `segmentation_provenance.json` sidecar from Stage 3a. Starting a run here (`--stage quantify --seg_dir ...`) quantifies a manually corrected/replacement set of masks, with an optional merge-multiple-sources step first. |
 
-## Enter at any stage
+## One run, many stages: `--stage` and `--stop_after`
 
-Stages 2, 3a, and 3b accept either the upstream stage's own output *or* a direct upload that
-follows astril's directory/file-naming conventions for that boundary. With a direct upload, the
-patient folders must sit at the top level of the upload (or of `--nifti_dir`/`--preprocessed_dir`/
-`--seg_dir` when running locally), not inside an extra wrapper folder:
+`--stage` is where a run **starts**; it then runs every later stage in the same invocation, each
+handing its output straight to the next, through `--stop_after` (default: `quantify`). Every
+stage still publishes its outputs under its own `NN-<stage>/` folder, so each one is a checkpoint
+a later run can start from. The usual flow needs only one stop:
 
-- **Stage 2 (preprocess):** NIfTI library, `{patient}/{exam}/{label}.nii.gz`
+1. `--stage organize` -- always stops here: fill in `00-organize/patient_metadata_blank.csv`.
+2. `--stage plan_convert ...` -- plans, converts, preprocesses, segments and quantifies.
+
+Stop earlier to intervene by hand, then start the next run at the matching stage:
+
+| To... | Stop with | Then start the next run with |
+|---|---|---|
+| review/edit the conversion plan | `--stop_after plan_convert` | `--stage convert --conversion_plan <edited.csv>` |
+| take face-free data off-site (see PHI below) | `--stop_after preprocess` | `--stage segment --preprocessed_dir <upload_preprocessed>` |
+| correct masks by hand before quantifying | `--stop_after segment` | `--stage quantify --seg_dir <corrected masks>` |
+
+`--merge_before_quantify` only applies to runs starting at `quantify` (it overlays several mask
+sources for an already-fixed set of exams), and is rejected otherwise.
+
+## Starting from your own data
+
+Stages 2, 3a, and 3b also accept a direct upload that follows astril's directory/file-naming
+conventions for that boundary, not just this pipeline's own output. The patient folders must sit
+at the top level of the upload (or of `--nifti_dir`/`--preprocessed_dir`/`--seg_dir` when running
+locally), not inside an extra wrapper folder:
+
+- **Stage 2 (preprocess):** NIfTI library, `{patient}/{exam}/{label}.nii.gz` -- **PHI** (faces)
 - **Stage 3a (segment):** preprocessed NIfTI library, `{patient}/{exam}/..._brain-norm.nii.gz` +
-  `..._brainmask.nii.gz`
-- **Stage 3b (quantify, standalone):** segmentation masks, `{patient}/{exam}/..._GBM-seg.nii.gz`
+  `..._brainmask.nii.gz` -- normally the face-free `02-preprocess/upload_preprocessed/` folder
+- **Stage 3b (quantify):** segmentation masks, `{patient}/{exam}/..._GBM-seg.nii.gz`
   (or a flat collection of exam dirs -- depth is auto-detected, see `subworkflows/local/utils.nf`).
-  `--stage segment` always produces its own masks first (Stage 3a) before quantifying them, so
-  this is the entry point for manually corrected or externally produced masks.
+  This is the entry point for manually corrected or externally produced masks.
 
 Stages 1a and 1b only run on this pipeline's own upstream output (Stage 0's organized DICOM tree
 and index; Stage 1a's plan), since their absolute-path bookkeeping is specific to it -- though
 Stage 1b accepts a hand-edited copy of Stage 1a's plan. Only Stage 0 has to tolerate genuinely
 arbitrary input structure.
 
+## PHI and what is safe to upload
+
+Everything before skull-stripping is PHI for real patients: raw DICOM (headers), the organize and
+plan outputs, and converted NIfTI (identifiable faces in the image data, even after astril's
+sidecar scrubbing). Stage 2's full output, `02-preprocess/preprocessed_library/`, is **not** safe
+either: it keeps `_raw_passthrough/`, a full copy of the whole-head input NIfTIs needed to extend
+the library incrementally later, and its logs/transform records contain absolute local paths.
+
+Stage 2 therefore also writes `02-preprocess/upload_preprocessed/`: an allowlisted copy holding
+only `{patient}/{exam}/` files ending in `_brain-norm.nii.gz`, `_brain.nii.gz` or
+`_brainmask.nii.gz` -- all masked by astril's skull-stripping, and everything Stage 3a needs
+(`modules/local/export_face_free_library`). Upload that folder, and nothing else from before it.
+Chained runs segment from this same export, so local and Cirro runs exercise exactly the files
+you'd upload. Patient and exam folder names come from your metadata table, so use
+non-identifying patient IDs there.
+
+On Cirro, every entry point before "Run from preprocessed images" requires a PHI confirmation in
+its form and is labelled "test data only"; "Run from preprocessed images" and "Quantify
+segmentation masks" refuse inputs containing `_raw_passthrough/`, `with-skulls/`,
+`temp_preprocessing/` or astril scratch folders. Incremental preprocessing (`Prior preprocessed
+library`) needs `_raw_passthrough/`, so for real patient data it is local-only.
+
 ## Running locally (outside Cirro)
 
 ```
-nextflow run main.nf -profile docker,test --stage organize --dicom_dir /path/to/raw_dicom
+# Stage 0, then fill in results/00-organize/patient_metadata_blank.csv
+nextflow run main.nf -profile docker --stage organize --dicom_dir /path/to/raw_dicom --outdir results
+
+# Plan -> convert -> preprocess, stopping before anything leaves the machine
+nextflow run main.nf -profile docker --stage plan_convert --stop_after preprocess \
+    --organized_dir results/00-organize/organized_dicoms \
+    --dicom_index results/00-organize/dicom_index.csv \
+    --organized_dir_root results/00-organize/organized_dicoms_root.txt \
+    --patient_metadata patient_metadata_filled.csv --outdir results
+# -> upload results/02-preprocess/upload_preprocessed/ to Cirro ("Run from preprocessed images"),
+#    or continue locally with --stage segment --preprocessed_dir results/02-preprocess/upload_preprocessed
 ```
+Add `-profile docker,test` for small machines (fewer workers, CPU-only HD-BET).
 
 Every process runs in `params.container` (default: the published
 `ghcr.io/alexander-ling/astril-nf:<version>` image); pass `--container astril-nf:test` to use a
@@ -118,27 +179,11 @@ task would only ever see that one file's own sidecar, forcing a separate merge s
 per-exam tables that could end up with different column sets -- so, like Stage 2, this is one
 task, sized by `quantify_n_threads`/`task.cpus` the same way as the others. The one place per-exam
 fan-out still applies is the *optional* `merge_before_quantify` pre-step (`MERGE_SEG_VOLUMES`),
-which genuinely is independent per exam -- available only via the standalone `--stage quantify`
-entry point, not the automatic quantify chained after `--stage segment` (see "Chaining Stage 3a
-into Stage 3b" below).
-
-## Chaining Stage 3a into Stage 3b
-
-`--stage segment` runs Stage 3a (segmentation) and then, by default, Stage 3b (quantify)
-automatically in the same invocation -- the well-defined contract between them
-(`segmentation_provenance.json`) makes this the normal case rather than something requiring two
-separate commands. `SEGMENT`'s per-patient output is collected into one list and handed to
-`QUANTIFY` as a single whole-tree call, exactly as if you'd passed that same tree to `--stage
-quantify --seg_dir ...` yourself.
-
-Pass `--skip_quantify` to stop after Stage 3a alone -- e.g. to manually correct masks before
-quantifying -- then run quantification on its own afterward: `--stage quantify --seg_dir
-<corrected masks>`. `--merge_before_quantify` (overlaying multiple segmentation sources for a
-single, already-fixed set of exams) is rejected with a clear error if set during the automatic
-chain, since it only makes sense for that standalone re-entry case; the pipeline never runs it
-except through `--stage quantify` directly. In Cirro, this reflects a `skip_quantify` toggle on
-the segmentation form plus a separate, always-available "astril - Quantify segmentation volumes"
-process for the manual-correction path.
+which genuinely is independent per exam -- available only to runs starting at `--stage quantify`,
+not the quantify that follows segmentation within a run (see "One run, many stages" above).
+Within a run, `SEGMENT`'s per-patient output is collected into one list and handed to `QUANTIFY`
+as a single whole-tree call, exactly as if you'd passed that same tree to `--stage quantify
+--seg_dir ...` yourself.
 
 ## Model provenance and level labels (Stage 3a → Stage 3b)
 
@@ -255,47 +300,60 @@ same task in place for interactive debugging.
 
 ## Deploying in Cirro
 
-Each stage is registered as its own **custom pipeline** in a Cirro project (Project Settings ->
-Pipelines -> add a custom pipeline), all pointing at this repository and `main.nf`, each with its
-own configuration folder under `.cirro/`. Cirro reads `process-form.json`, `process-input.json`,
-`process-compute.config`, and (where present) `preprocess.py` / `process-output.json` from that
-folder. `process-definition.json` is *not* read for custom pipelines -- it records the values to
-enter in the registration form (id, name, description, input processes):
+Each Cirro custom pipeline is an **entry point**: it starts at one stage and runs every later
+stage up to the form's "Stop after" choice (through quantification by default). All six point
+at this repository and `main.nf`, each with its own configuration folder under `.cirro/`:
 
-| Config folder | Process ID | Input processes |
-|---|---|---|
-| `.cirro/00-organize` | `process-astril-organize-1-0` | `custom_dataset` ("Files" upload of raw DICOM) |
-| `.cirro/01a-plan-conversion` | `process-astril-plan-conversion-1-0` | `process-astril-organize-1-0` |
-| `.cirro/01b-convert` | `process-astril-convert-1-0` | `process-astril-plan-conversion-1-0` |
-| `.cirro/02-preprocess` | `process-astril-preprocess-1-0` | `process-astril-convert-1-0`, `custom_dataset` |
-| `.cirro/03-segment` | `process-astril-segment-1-0` | `process-astril-preprocess-1-0`, `custom_dataset` |
-| `.cirro/03b-quantify` | `process-astril-quantify-1-0` | `process-astril-segment-1-0`, `custom_dataset` |
+| Config folder | Process ID | Name in Cirro | Accepts input from |
+|---|---|---|---|
+| `.cirro/00-organize` | `process-astril-organize-1-0` | astril - Organize DICOM (de-identified test data only) | Files upload |
+| `.cirro/01a-plan-conversion` | `process-astril-plan-conversion-1-0` | astril - Run from patient metadata (test data only) | Organize |
+| `.cirro/01b-convert` | `process-astril-convert-1-0` | astril - Run from conversion plan (test data only) | Run from patient metadata |
+| `.cirro/02-preprocess` | `process-astril-preprocess-1-0` | astril - Run from NIfTI (face-free test data only) | the two above, Files upload |
+| `.cirro/03-segment` | `process-astril-segment-1-0` | **astril - Run from preprocessed images** (normal entry point for real data) | the three above, Files upload |
+| `.cirro/03b-quantify` | `process-astril-quantify-1-0` | astril - Quantify segmentation masks | the four above, Files upload |
 
-Process IDs can't be changed after creation, and the `preprocess.py` scripts and dataset pickers
-refer to them, so use exactly these. Pin the Nextflow version to `26.04.0` where the form allows.
+Process IDs can't be changed after creation (each names the stage its pipeline starts at), and
+the `preprocess.py` scripts and dataset pickers refer to them.
+
+**Registering and updating.** `scripts/register_cirro_pipelines.py` creates or updates all six
+from their `process-definition.json` (name, description, input processes, upload guidance) via
+the Cirro SDK, then syncs each one so Cirro re-reads its config folder from GitHub. Dry run by
+default; `--apply` writes; `--sync-only` just re-syncs after pushing config changes. Cirro
+throttles its reads of GitHub after a few calls in a row, so the script paces itself and retries.
+Only whoever registered a pipeline can sync it.
+
+**Generated config files.** Each entry point's `process-form.json`, `process-input.json`,
+`preprocess.py`, `process-compute.config` and `process-output.json` are generated by
+`scripts/build_cirro_configs.py` from per-stage field definitions, since every entry point
+repeats the fields of all the stages after it. Edit the script, not the files, then run it
+(`--check` verifies the committed files are current). `process-definition.json` is hand-written.
 
 How the pieces fit:
 
 - **One input dataset per run.** Each process maps its single selected input to
   `$.inputs[0].dataPath`, and writes its own outputs to `$.dataset.dataPath` (`outdir`) under
-  that stage's subfolder (`00-organize/`, `01a-plan-conversion/`, ...).
+  each stage's subfolder (`00-organize/`, `01a-plan-conversion/`, ...).
 - **Other datasets are chosen in the form**, via Cirro dataset pickers: the filled-in patient
-  metadata table (1a), the organized DICOM dataset and an optional edited plan (1b), an optional
-  prior preprocessed library (2), and an optional custom model or labels contract (3a/3b). Upload
-  the metadata table / edited plan as a "Tables (TSV/CSV)" or "Files" dataset containing exactly
-  one `.csv`; a custom model as a "Files" dataset containing its `pipeline.json` and checkpoints.
-- **`preprocess.py`** resolves what can't be mapped statically: whether the input is the upstream
-  stage's own dataset (look inside its stage subfolder) or a direct upload (top level), decided by
-  the input dataset's process ID; and turning picked datasets into concrete file paths. The
-  scripts expose `run(ds)` so they can be exercised against real project datasets from outside
-  Cirro with the Cirro SDK's `DataPortal().developer_helper.generate_preprocess_for_input_datasets(...)`.
+  metadata table, the organized DICOM dataset and an optional edited plan, an optional prior
+  preprocessed library, and an optional custom model or labels contract. Upload the metadata
+  table / edited plan as a "Tables (TSV/CSV)" or "Files" dataset containing exactly one `.csv`;
+  a custom model as a "Files" dataset containing its `pipeline.json` and checkpoints.
+- **`preprocess.py`** (the same generated script in every folder, differing only in its entry
+  stage) resolves what can't be mapped statically: it enforces the PHI confirmation on entry
+  points before skull-stripping; decides whether the input is one of this pipeline's datasets
+  (read the stage subfolder) or a direct upload (top level) from the input's process ID; refuses
+  non-face-free input at "Run from preprocessed images" and "Quantify segmentation masks"; and
+  turns picked datasets into file paths. Each exposes `run(ds)` so it can be exercised against
+  real project datasets with the Cirro SDK's
+  `DataPortal().developer_helper.generate_preprocess_for_input_datasets(...)`.
 - **GPU:** Cirro's GPU nodes are g5 (NVIDIA A10G, 24 GB). `PREPROCESS_LIBRARY` defaults to 14
   workers -> 14 vCPU / 56 GB (fits g5.4xlarge) on the on-demand queue (`PW_ONDEMAND_JOB_QUEUE`), since
   it's one long task; `SEGMENT_GBM` requests 4 vCPU / 14 GB (fits g5.xlarge) on the default queue.
   Requests sit slightly under each instance's nominal memory because AWS Batch reserves some of it.
   `--shm-size` is set explicitly in these overlays: Nextflow's AWS Batch executor translates it
   into the job's shared-memory size, but ignores `--gpus` (`accelerator = 1` requests the GPU).
-- **Results table:** Stage 3a (with its automatic quantify) and standalone Stage 3b both expose
+- **Results table:** every entry point that can reach quantification exposes
   `03b-quantify/volumes.tsv` in Cirro's table viewer via `process-output.json`.
 
 ### Still to confirm in a live Cirro project
