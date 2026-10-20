@@ -5,7 +5,7 @@
   ],
   "childProcessIds": [],
   "name": "astril: Convert DICOM plan to NIfTI",
-  "desc": "Stage 1b - execute the (optionally user-edited) conversion plan from Stage 1a, producing the NIfTI library.",
+  "desc": "Stage 1b - execute the (optionally user-edited) conversion plan from Stage 1a, producing the NIfTI library. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",

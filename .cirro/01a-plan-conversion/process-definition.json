@@ -5,7 +5,7 @@
   ],
   "childProcessIds": [],
   "name": "astril: Plan DICOM to NIfTI conversion",
-  "desc": "Stage 1a - classify DICOM series and propose an editable DICOM-to-NIfTI conversion plan, using the user-filled-in patient metadata table from Stage 0. Review/edit the resulting plan before running Stage 1b.",
+  "desc": "Stage 1a - classify DICOM series and propose an editable DICOM-to-NIfTI conversion plan, using the user-filled-in patient metadata table from Stage 0. Review/edit the resulting plan before running Stage 1b. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",

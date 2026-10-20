@@ -6,7 +6,7 @@
   ],
   "childProcessIds": [],
   "name": "astril: Quantify segmentation volumes",
-  "desc": "Stage 3b - per-class segmentation volumes (mm3) from a set of segmentation masks. Runs automatically as part of Stage 3a (segment) by default; register/run this separately to re-quantify a manually corrected or replacement set of masks (optionally merging multiple segmentation sources first) without re-running segmentation.",
+  "desc": "Stage 3b - per-class segmentation volumes (mm3) from a set of segmentation masks. Runs automatically as part of Stage 3a (segment) by default; register/run this separately to re-quantify a manually corrected or replacement set of masks (optionally merging multiple segmentation sources first) without re-running segmentation. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",

@@ -87,7 +87,17 @@ RUN python3 -c "from HD_BET.checkpoint_download import maybe_download_parameters
 # (HD-BET weights and GBM_seg_v2 are both non-commercial) -- see THIRD_PARTY_NOTICES.md.
 COPY LICENSE THIRD_PARTY_NOTICES.md /licenses/astril-nf/
 
+# Version metadata. ASTRIL_VERSION must be bumped together with ASTRIL_GIT_REF; the build fails
+# if it doesn't match the installed package, so the label can't drift from the code. Declared
+# down here (not with ASTRIL_GIT_REF) so changing them doesn't invalidate the heavy layers above.
+ARG ASTRIL_NF_VERSION=0.1.0
+ARG ASTRIL_VERSION=0.7.30
+RUN python3 -c "from importlib.metadata import version; v = version('astril'); assert v == '${ASTRIL_VERSION}', f'installed astril {v} != ASTRIL_VERSION ${ASTRIL_VERSION}'"
+
 LABEL org.opencontainers.image.source="https://github.com/Alexander-Ling/astril-nf" \
-      org.opencontainers.image.description="astril-nf: DICOM ingestion, MRI preprocessing, and GBM segmentation (research use only, non-commercial)"
+      org.opencontainers.image.description="astril-nf: DICOM ingestion, MRI preprocessing, and GBM segmentation (research use only, non-commercial)" \
+      org.opencontainers.image.version="${ASTRIL_NF_VERSION}" \
+      io.github.alexander-ling.astril.version="${ASTRIL_VERSION}" \
+      io.github.alexander-ling.astril.git-ref="${ASTRIL_GIT_REF}"
 
 WORKDIR /work

@@ -214,8 +214,13 @@ Build and publish with:
 docker build -t ghcr.io/alexander-ling/astril-nf:0.1.0 .
 docker push ghcr.io/alexander-ling/astril-nf:0.1.0
 ```
-To pick up newer astril code, bump `ASTRIL_GIT_REF` in the Dockerfile, bump the image tag (here and
-in `nextflow.config`'s `params.container`), and rebuild. `ASTRIL_CACHEBUST`
+To pick up newer astril code, bump `ASTRIL_GIT_REF` and `ASTRIL_VERSION` in the Dockerfile (the
+build fails if `ASTRIL_VERSION` doesn't match the installed astril), bump the image tag (here, in
+`nextflow.config`'s `params.container` and `manifest.version`, and the Dockerfile's
+`ASTRIL_NF_VERSION`), update the "Versions:" line at the end of each
+`.cirro/*/process-definition.json` description, and rebuild. The image carries these as labels
+(`org.opencontainers.image.version`, `io.github.alexander-ling.astril.version`,
+`io.github.alexander-ling.astril.git-ref`; see `docker inspect`). `ASTRIL_CACHEBUST`
 (`--build-arg ASTRIL_CACHEBUST=$(date +%s)`) forces the astril install and model downloads to
 re-run without changing the ref -- Docker would otherwise cache those layers forever.
 

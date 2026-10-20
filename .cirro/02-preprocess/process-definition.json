@@ -6,7 +6,7 @@
   ],
   "childProcessIds": [],
   "name": "astril: Preprocess MRI (register, skull-strip, normalize)",
-  "desc": "Stage 2 - co-register, skull-strip (HD-BET), and intensity-normalize a NIfTI library, producing an aligned, skull-stripped preprocessed library. Optionally continues an existing preprocessed library (select it in the 'Prior preprocessed library' field) -- new exams for already-known patients are registered into the SAME reference space chosen previously, never a re-picked one. QC PDFs are an optional extra output.",
+  "desc": "Stage 2 - co-register, skull-strip (HD-BET), and intensity-normalize a NIfTI library, producing an aligned, skull-stripped preprocessed library. Optionally continues an existing preprocessed library (select it in the 'Prior preprocessed library' field) -- new exams for already-known patients are registered into the SAME reference space chosen previously, never a re-picked one. QC PDFs are an optional extra output. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",
