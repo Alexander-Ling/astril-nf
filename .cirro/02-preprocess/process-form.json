@@ -6,7 +6,7 @@
       "prior_preprocessed_dataset": {
         "type": "string",
         "title": "Prior preprocessed library (optional)",
-        "description": "Leave blank for a first-time run. To add new exams to an existing library without changing any patient's reference space, select that library's previous 'astril: Preprocess' dataset here.",
+        "description": "Leave blank for a first-time run. To add new exams to an existing library without changing any patient's reference space, select that library's previous 'astril - Preprocess MRI' dataset here.",
         "pathType": "dataset",
         "process": [
           "process-astril-preprocess-1-0"

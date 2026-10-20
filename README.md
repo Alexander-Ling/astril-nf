@@ -137,7 +137,7 @@ quantifying -- then run quantification on its own afterward: `--stage quantify -
 single, already-fixed set of exams) is rejected with a clear error if set during the automatic
 chain, since it only makes sense for that standalone re-entry case; the pipeline never runs it
 except through `--stage quantify` directly. In Cirro, this reflects a `skip_quantify` toggle on
-the segmentation form plus a separate, always-available "astril: Quantify segmentation volumes"
+the segmentation form plus a separate, always-available "astril - Quantify segmentation volumes"
 process for the manual-correction path.
 
 ## Model provenance and level labels (Stage 3a → Stage 3b)

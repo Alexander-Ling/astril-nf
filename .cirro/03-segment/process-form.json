@@ -40,7 +40,7 @@
       "skip_quantify": {
         "type": "boolean",
         "title": "Skip automatic quantify",
-        "description": "Stage 3b (quantify) normally runs automatically right after segmentation. Enable this to stop after segmentation alone -- e.g. to manually correct masks before quantifying -- then run the separate 'astril: Quantify segmentation volumes' process afterward.",
+        "description": "Stage 3b (quantify) normally runs automatically right after segmentation. Enable this to stop after segmentation alone -- e.g. to manually correct masks before quantifying -- then run the separate 'astril - Quantify segmentation volumes' process afterward.",
         "default": false
       },
       "labels_json_dataset": {

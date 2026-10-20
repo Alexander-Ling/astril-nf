@@ -4,7 +4,7 @@
     "custom_dataset"
   ],
   "childProcessIds": [],
-  "name": "astril: Organize DICOM library",
+  "name": "astril - Organize DICOM library",
   "desc": "Stage 0 - route an arbitrary DICOM library into astril's structured Patient/Exam/Series tree, build a DICOM index, and generate a blank per-patient metadata table for the user to fill in before Stage 1a. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",

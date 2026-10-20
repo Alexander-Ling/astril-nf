@@ -12,7 +12,7 @@ Dry run by default: prints what it would do and changes nothing. Pass --apply to
 Scope: the only Cirro writes this script makes are create/update/sync of the process IDs
 found in .cirro/*/process-definition.json, all of which must start with `process-astril-`.
 It never archives or deletes anything. Reads: the project list (to resolve --project by
-name) and the process list (to decide create vs. update).
+name) and a lookup of each of our process IDs (to decide create vs. update).
 
 Usage (after `pip install cirro` and `cirro configure`):
     python scripts/register_cirro_pipelines.py --project BTC-GBM-Development
@@ -21,6 +21,7 @@ Usage (after `pip install cirro` and `cirro configure`):
 """
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -29,6 +30,15 @@ CIRRO_DIR = REPO_ROOT / ".cirro"
 ID_PREFIX = "process-astril-"
 # Cirro's built-in "Files" upload type: not one of ours, never created or modified here.
 BUILTIN_PARENTS = {"custom_dataset"}
+NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9 .&\-@!#'()/]*")
+
+
+def check(result, expected_type, what):
+    """The SDK's create endpoint RETURNS a PortalErrorResponse on HTTP 400 instead of raising,
+    so every write's result is checked explicitly; never assume a call that didn't raise worked."""
+    if not isinstance(result, expected_type):
+        sys.exit(f"{what} failed: {result}")
+    return result
 
 
 def load_definitions():
@@ -37,8 +47,10 @@ def load_definitions():
         d = json.loads(path.read_text(encoding="utf-8"))
         if not d["id"].startswith(ID_PREFIX):
             sys.exit(f"{path}: id {d['id']!r} doesn't start with {ID_PREFIX!r}; refusing to touch it")
-        # Cirro's update endpoint enforces this (create doesn't), so check up front rather than
-        # failing halfway through a run.
+        # Cirro's own validation rules, checked up front rather than failing halfway through a run.
+        if not NAME_RE.fullmatch(d["name"]):
+            sys.exit(f"{path}: name {d['name']!r} must start with a letter/digit and contain only "
+                     "letters, digits, spaces and .&-@!#'()/")
         if not 4 <= len(d["desc"]) <= 500:
             sys.exit(f"{path}: desc is {len(d['desc'])} chars; Cirro requires 4-500")
         if d["code"]["repository"] != "GITHUBPUBLIC":
@@ -48,6 +60,14 @@ def load_definitions():
     if not defs:
         sys.exit(f"no process-definition.json files under {CIRRO_DIR}")
     return defs
+
+
+def process_exists(cirro, pid):
+    from cirro_api_client.v1.errors import NotFoundException
+    try:
+        return cirro.processes.get(pid) is not None
+    except NotFoundException:
+        return False
 
 
 def resolve_project_id(cirro, project):
@@ -111,9 +131,10 @@ def main():
             sys.exit(f"{d['id']}: parent(s) {sorted(unknown)} are neither astril-nf processes nor {BUILTIN_PARENTS}")
 
     from cirro.cirro_client import CirroApi
+    from cirro_api_client.v1.models import CreateResponse, CustomPipelineSettings
     cirro = CirroApi()
     project_id = resolve_project_id(cirro, args.project)
-    existing = {p.id for p in cirro.processes.list(include_archived=True)}
+    existing = {d["id"] for d in defs if process_exists(cirro, d["id"])}
     mode = "APPLY" if args.apply else "DRY RUN (pass --apply to write)"
     print(f"{mode}: project {args.project!r} -> {project_id}\n")
 
@@ -127,7 +148,7 @@ def main():
                 continue
             print(f"sync   {pid}")
             if args.apply:
-                cirro.processes.sync_custom_process(pid)
+                check(cirro.processes.sync_custom_process(pid), CustomPipelineSettings, f"sync {pid}")
             continue
 
         children = [c for c in d["childProcessIds"] if c in existing]
@@ -142,10 +163,12 @@ def main():
         if args.apply:
             body = build_input(d, project_id, children)
             if is_new:
-                cirro.processes.create_custom_process(body)
+                check(cirro.processes.create_custom_process(body), CreateResponse, f"create {pid}")
+                if not process_exists(cirro, pid):
+                    sys.exit(f"create {pid} reported success but the process doesn't exist")
             else:
-                cirro.processes.update_custom_process(pid, body)
-            cirro.processes.sync_custom_process(pid)
+                cirro.processes.update_custom_process(pid, body)  # raises on 400/403/404
+            check(cirro.processes.sync_custom_process(pid), CustomPipelineSettings, f"sync {pid}")
         existing.add(pid)  # later stages can now name it as a parent/child
 
     # A stage listing a LATER stage as its child (e.g. segment -> quantify) was created
@@ -154,7 +177,7 @@ def main():
         print(f"link   {pid} -> children {d['childProcessIds']}")
         if args.apply:
             cirro.processes.update_custom_process(pid, build_input(d, project_id, d["childProcessIds"]))
-            cirro.processes.sync_custom_process(pid)
+            check(cirro.processes.sync_custom_process(pid), CustomPipelineSettings, f"sync {pid}")
 
     print("\nDone." if args.apply else "\nDry run only; nothing was changed.")
 

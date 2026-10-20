@@ -7,7 +7,7 @@
   "childProcessIds": [
     "process-astril-quantify-1-0"
   ],
-  "name": "astril: GBM segmentation",
+  "name": "astril - GBM segmentation",
   "desc": "Stage 3a - segmentation inference over a preprocessed NIfTI library. Pick a model family from the dropdown (GBM_seg_v2 labels: 1=necrosis/non-enhancing tumor, 2=edema/non-FLAIR hyperintensity, 3=enhancing tumor/tissue, 4=resection cavity), or select an uploaded model directory in 'Custom model' (overrides the dropdown). Stage 3b (quantify) runs automatically afterwards; enable 'Skip automatic quantify' to correct masks manually first. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",

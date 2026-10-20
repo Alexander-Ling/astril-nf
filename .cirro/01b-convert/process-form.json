@@ -6,7 +6,7 @@
       "organized_dataset": {
         "type": "string",
         "title": "Organized DICOM dataset (Stage 0 output)",
-        "description": "The 'astril: Organize DICOM' dataset the selected conversion plan was generated from.",
+        "description": "The 'astril - Organize DICOM library' dataset the selected conversion plan was generated from.",
         "pathType": "dataset",
         "process": [
           "process-astril-organize-1-0"
