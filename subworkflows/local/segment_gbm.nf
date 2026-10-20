@@ -30,5 +30,5 @@ workflow SEGMENT {
     SEGMENT_GBM(patient_dirs, model_dir)
 
     emit:
-    segmented = SEGMENT_GBM.out.segmented   // tuple(patient_name, path)
+    segmented = SEGMENT_GBM.out.segmented   // path: one patient folder of segmentation outputs per task
 }

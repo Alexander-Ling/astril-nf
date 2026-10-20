@@ -25,7 +25,7 @@ PHI_ENTRIES = ('organize', 'plan_convert', 'convert', 'preprocess')
 OUR_PROCESS_PREFIX = "process-astril-"
 # Entry stage -> (param holding the input dataset root, subfolder holding that stage's input
 # inside one of our own datasets). The segment entry reads the face-free export, never the full
-# preprocessed_library (which also holds the raw whole-head _raw_passthrough copy).
+# preprocessed_library (which also holds logs with absolute paths).
 ENTRY_INPUT_SUBDIR = {
     "preprocess": ("nifti_dir", "01b-convert/nifti_out"),
     "segment": ("preprocessed_dir", "02-preprocess/upload_preprocessed"),
@@ -33,7 +33,7 @@ ENTRY_INPUT_SUBDIR = {
 }
 FACE_FREE_ENTRIES = {"segment", "quantify"}
 # Path components that may hold un-skull-stripped (face-containing) images: the raw-input copy
-# kept for incremental preprocessing, astril's opt-in skull-on outputs, and its scratch dirs.
+# kept by astril-nf < 0.2.0 libraries, astril's opt-in skull-on outputs, and its scratch dirs.
 UNSAFE_DIR_NAMES = {"_raw_passthrough", "with-skulls", "temp_preprocessing"}
 UNSAFE_DIR_PREFIXES = (".astril_tmp_", "astril_tmp_")
 
@@ -91,6 +91,26 @@ def _pick(ds, form_key, param, resolve, what):
     ds.remove_param(form_key, force=True)
 
 
+def _picked_list(value) -> list[str]:
+    # A multi-select dataset picker may arrive as a list or a comma-separated string.
+    if not value:
+        return []
+    items = value if isinstance(value, list) else str(value).split(",")
+    return [str(v).strip() for v in items if str(v).strip()]
+
+
+def _resolve_prior_nifti(ds) -> None:
+    # Which folder holds the NIfTI is explicit from which picker it came through: astril-nf
+    # datasets keep it under 01b-convert/nifti_out, uploads at their top level.
+    dirs = [_data_root(d) + "/01b-convert/nifti_out" for d in _picked_list(ds.params.get("prior_nifti_pipeline_datasets"))]
+    dirs += [_data_root(d) for d in _picked_list(ds.params.get("prior_nifti_upload_datasets"))]
+    if dirs:
+        ds.logger.info(f"Earlier NIfTI inputs for the incremental run: {dirs}")
+        ds.add_param("prior_nifti_dirs", ",".join(dirs), overwrite=True)
+    ds.remove_param("prior_nifti_pipeline_datasets", force=True)
+    ds.remove_param("prior_nifti_upload_datasets", force=True)
+
+
 def run(ds: PreprocessDataset):
     # Separate from main() so it can also be exercised against real project datasets from
     # outside Cirro via the SDK's DataPortal().developer_helper.generate_preprocess_for_input_datasets().
@@ -121,6 +141,7 @@ def run(ds: PreprocessDataset):
           lambda d: _find_single(d, ".csv", "edited conversion plan"), "edited conversion plan")
     _pick(ds, "prior_preprocessed_dataset", "prior_preprocessed_dir",
           lambda d: _data_root(d) + "/02-preprocess/preprocessed_library", "prior preprocessed library")
+    _resolve_prior_nifti(ds)
     _pick(ds, "model_dataset", "model_dir",
           lambda d: _find_single(d, "/pipeline.json", "custom model").rsplit("/", 1)[0], "custom model")
     _pick(ds, "labels_json_dataset", "labels_json",

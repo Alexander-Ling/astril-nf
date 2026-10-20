@@ -5,7 +5,7 @@
   ],
   "childProcessIds": [],
   "name": "astril - Organize DICOM (de-identified test data only)",
-  "desc": "TEST DATA ONLY: input is pre-skull-strip (DICOM headers, faces) and real patient data here is PHI. Stage 0: sort a DICOM library into Patient/Exam/Series, index it, and write a blank patient metadata table. Fill that table in, upload it, then continue with 'astril - Run from patient metadata'. Versions: astril-nf 0.1.0, astril 0.7.30.",
+  "desc": "TEST DATA ONLY: input is pre-skull-strip (DICOM headers, faces) and real patient data here is PHI. Stage 0: sort a DICOM library into Patient/Exam/Series, index it, and write a blank patient metadata table. Fill that table in, upload it, then continue with 'astril - Run from patient metadata'. Versions: astril-nf 0.2.0, astril 0.7.31.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",

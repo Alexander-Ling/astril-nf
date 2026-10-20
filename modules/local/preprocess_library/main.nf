@@ -45,9 +45,9 @@ process PREPROCESS_LIBRARY {
     def n_workers = params.preprocess_n_workers
     """
     set -o pipefail
-    mkdir -p preprocessed_library/_raw_passthrough
-    cp -rL in_lib/. preprocessed_library/_raw_passthrough/
-
+    # No copy of the raw input is kept in the library: it would duplicate data the caller
+    # already has, and it's whole-head (identifiable). Incremental runs pass the earlier raw
+    # NIfTI back in via params.prior_nifti_dirs instead (see merge_cumulative_nifti_library).
     preprocess_brain_mris \\
         --in_dir in_lib \\
         --out_dir preprocessed_library \\

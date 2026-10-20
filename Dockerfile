@@ -38,7 +38,7 @@ RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11 \
 ARG ASTRIL_GIT_URL=https://github.com/Alexander-Ling/astril
 # Pinned to an exact astril commit so a given image tag always contains the same code; bump
 # deliberately (and re-tag the image) when picking up astril changes.
-ARG ASTRIL_GIT_REF=0edca6fbed6248f8dd1fbece2478a191cdd7bb0f
+ARG ASTRIL_GIT_REF=2af29645e4ed3483bd36b23401093daf05f1b3a9
 # Cache buster: bump this (or pass --build-arg) to force re-pulling ASTRIL_GIT_REF and
 # re-running the model downloads below, since Docker would otherwise cache this layer forever.
 ARG ASTRIL_CACHEBUST=0
@@ -90,8 +90,8 @@ COPY LICENSE THIRD_PARTY_NOTICES.md /licenses/astril-nf/
 # Version metadata. ASTRIL_VERSION must be bumped together with ASTRIL_GIT_REF; the build fails
 # if it doesn't match the installed package, so the label can't drift from the code. Declared
 # down here (not with ASTRIL_GIT_REF) so changing them doesn't invalidate the heavy layers above.
-ARG ASTRIL_NF_VERSION=0.1.0
-ARG ASTRIL_VERSION=0.7.30
+ARG ASTRIL_NF_VERSION=0.2.0
+ARG ASTRIL_VERSION=0.7.31
 RUN python3 -c "from importlib.metadata import version; v = version('astril'); assert v == '${ASTRIL_VERSION}', f'installed astril {v} != ASTRIL_VERSION ${ASTRIL_VERSION}'"
 
 LABEL org.opencontainers.image.source="https://github.com/Alexander-Ling/astril-nf" \

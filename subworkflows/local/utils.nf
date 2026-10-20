@@ -18,6 +18,7 @@ def findLeafDirsContaining(dir, String nameSubstring) {
         return [dir]
     }
     return here
+        // _raw_passthrough: whole-head raw-input copy inside astril-nf < 0.2.0 libraries.
         .findAll { d -> d.isDirectory() && d.name != '_raw_passthrough' }
         .collectMany { d -> findLeafDirsContaining(d, nameSubstring) }
 }

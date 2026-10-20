@@ -2,10 +2,10 @@
 // images and brain masks -- the face-free subset that's safe to take off-site (e.g. to Cirro)
 // and is all Stage 3a (segment) needs.
 //
-// Built as an ALLOWLIST, never a denylist: preprocessed_library/ also contains
-// `_raw_passthrough/` (a full copy of the raw whole-head input NIfTIs -- faces included -- kept
-// for incremental runs), logs and transform records with absolute local paths, and, after an
-// interrupted astril run, possibly `.astril_tmp_*` folders holding unmasked registered volumes.
+// Built as an ALLOWLIST, never a denylist: preprocessed_library/ also contains logs and
+// transform records with absolute local paths, and libraries built by astril < 0.7.31 after an
+// interrupted run may hold `.astril_tmp_*` folders of unmasked registered volumes (libraries
+// from astril-nf < 0.2.0 also carry `_raw_passthrough/`, a whole-head copy of the raw input).
 // Only files at exactly {patient}/{exam}/<file> depth whose names end in one of the patterns
 // below are copied, and patient/exam folders starting with `_` or `.` are skipped, so none of
 // those can get through however they're named. Every pattern below is masked by astril's

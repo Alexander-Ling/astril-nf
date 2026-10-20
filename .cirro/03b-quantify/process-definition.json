@@ -9,7 +9,7 @@
   ],
   "childProcessIds": [],
   "name": "astril - Quantify segmentation masks",
-  "desc": "Per-class segmentation volumes (mm3) from a set of masks, e.g. after correcting a segmentation run's masks by hand, optionally merging several mask sources per exam first. Segmentation runs already quantify automatically. Versions: astril-nf 0.1.0, astril 0.7.30.",
+  "desc": "Per-class segmentation volumes (mm3) from a set of masks, e.g. after correcting a segmentation run's masks by hand, optionally merging several mask sources per exam first. Segmentation runs already quantify automatically. Versions: astril-nf 0.2.0, astril 0.7.31.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",

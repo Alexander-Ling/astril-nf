@@ -5,6 +5,8 @@
   "phi_confirmation": "$.dataset.params.phi_confirmation",
   "stop_after": "$.dataset.params.stop_after",
   "prior_preprocessed_dataset": "$.dataset.params.prior_preprocessed_dataset",
+  "prior_nifti_pipeline_datasets": "$.dataset.params.prior_nifti_pipeline_datasets",
+  "prior_nifti_upload_datasets": "$.dataset.params.prior_nifti_upload_datasets",
   "preprocess_n_workers": "$.dataset.params.preprocess_n_workers",
   "preprocess_memory_gb_per_worker": "$.dataset.params.preprocess_memory_gb_per_worker",
   "preprocess_memory_gb": "$.dataset.params.preprocess_memory_gb",

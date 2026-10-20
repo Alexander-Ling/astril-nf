@@ -7,9 +7,10 @@ workflow PREPROCESS_MRI {
     take:
     new_nifti_dir          // channel: path, new/uploaded NIfTI exams, {patient}/{exam}/...
     prior_preprocessed_dir // channel: path, prior Stage 2 output, or the NO_PRIOR_LIBRARY placeholder
+    prior_nifti_dirs       // channel: list of earlier raw NIfTI roots, or [NO_PRIOR_NIFTI placeholder]
 
     main:
-    MERGE_CUMULATIVE_NIFTI_LIBRARY(new_nifti_dir, prior_preprocessed_dir)
+    MERGE_CUMULATIVE_NIFTI_LIBRARY(new_nifti_dir, prior_preprocessed_dir, prior_nifti_dirs)
 
     old_coreg_log = MERGE_CUMULATIVE_NIFTI_LIBRARY.out.old_coreg_log
         .ifEmpty(file("${projectDir}/assets/NO_OLD_COREG_LOG"))

@@ -74,9 +74,10 @@ arbitrary input structure.
 
 Everything before skull-stripping is PHI for real patients: raw DICOM (headers), the organize and
 plan outputs, and converted NIfTI (identifiable faces in the image data, even after astril's
-sidecar scrubbing). Stage 2's full output, `02-preprocess/preprocessed_library/`, is **not** safe
-either: it keeps `_raw_passthrough/`, a full copy of the whole-head input NIfTIs needed to extend
-the library incrementally later, and its logs/transform records contain absolute local paths.
+sidecar scrubbing). Stage 2's full output, `02-preprocess/preprocessed_library/`, holds only
+skull-stripped images, but its logs and transform records contain absolute local paths, so it
+isn't the thing to upload either. (Libraries built by astril-nf before 0.2.0 also contain
+`_raw_passthrough/`, a whole-head copy of the raw input: never upload those.)
 
 Stage 2 therefore also writes `02-preprocess/upload_preprocessed/`: an allowlisted copy holding
 only `{patient}/{exam}/` files ending in `_brain-norm.nii.gz`, `_brain.nii.gz` or
@@ -89,8 +90,11 @@ non-identifying patient IDs there.
 On Cirro, every entry point before "Run from preprocessed images" requires a PHI confirmation in
 its form and is labelled "test data only"; "Run from preprocessed images" and "Quantify
 segmentation masks" refuse inputs containing `_raw_passthrough/`, `with-skulls/`,
-`temp_preprocessing/` or astril scratch folders. Incremental preprocessing (`Prior preprocessed
-library`) needs `_raw_passthrough/`, so for real patient data it is local-only.
+`temp_preprocessing/` or astril scratch folders. Incremental preprocessing re-preprocesses the
+earlier raw NIfTI alongside the new exams (see below), so for real patient data it is local-only.
+
+No stage copies its inputs into its outputs: each stage publishes only what it produced, and a
+later run is pointed back at the earlier datasets it needs (on Cirro, by selecting them).
 
 ## Running locally (outside Cirro)
 
@@ -229,11 +233,15 @@ which takes precedence over the `model_family` dropdown when selected.
 `preprocess_brain_mris` picks one shared registration reference per patient and can reuse a
 previously-chosen one via `--old_coreg_log`. If that reference exam is missing from the current
 run's input, astril's own default behavior is to **silently pick a new one** -- which would put a
-patient's older and newer exams in different reference spaces. This pipeline refuses to do that:
-`bin/merge_cumulative_nifti_library.py` unions new exams with the raw exams carried forward from
-the prior preprocessed-library run and hard-fails if a patient's logged reference exam isn't
-present in the union, rather than letting astril silently re-pick. Pass a prior Stage 2 output as
-`--prior_preprocessed_dir` to run incrementally; omit it for a first-time run.
+patient's older and newer exams in different reference spaces. This pipeline refuses to do that.
+
+To add exams to an existing library, pass the prior Stage 2 library as `--prior_preprocessed_dir`
+(its coreg log pins each patient's reference) **and** the earlier raw NIfTI input(s) it was built
+from as `--prior_nifti_dirs a,b,...`. `bin/merge_cumulative_nifti_library.py` unions those with
+the new exams, every exam is re-preprocessed in the pinned reference spaces, and the run
+hard-fails if a patient's logged reference exam isn't in the union, rather than letting astril
+silently re-pick. On Cirro, the Stage 2 form has matching pickers (earlier NIfTI from astril-nf
+runs, and earlier NIfTI uploads). Omit both for a first-time run.
 
 ## Docker image
 
@@ -256,8 +264,8 @@ cause under the `CalledProcessError` astril reports on top of it).
 
 Build and publish with:
 ```
-docker build -t ghcr.io/alexander-ling/astril-nf:0.1.0 .
-docker push ghcr.io/alexander-ling/astril-nf:0.1.0
+docker build -t ghcr.io/alexander-ling/astril-nf:0.2.0 .
+docker push ghcr.io/alexander-ling/astril-nf:0.2.0
 ```
 To pick up newer astril code, bump `ASTRIL_GIT_REF` and `ASTRIL_VERSION` in the Dockerfile (the
 build fails if `ASTRIL_VERSION` doesn't match the installed astril), bump the image tag (here, in
@@ -362,6 +370,8 @@ How the pieces fit:
   stage 2/3a/3b direct-upload contracts need patient folders at the top level).
 - The exact value a dataset picker passes (the dataset root is assumed; `preprocess.py` also
   accepts a path that already ends in `/data`).
+- How a multi-select dataset picker (`"multiple": true`, the Stage 2 "earlier NIfTI" fields)
+  passes its value; `preprocess.py` accepts a list or a comma-separated string.
 - Image pull cost: every *new* Batch instance pulls the ~7.5 GB image from GHCR over the
   internet (instances Batch reuses keep it cached), adding a few minutes of startup per instance.
   If that matters at scale, ask Cirro whether they can host or cache the image inside their AWS

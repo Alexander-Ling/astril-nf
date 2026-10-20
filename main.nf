@@ -159,7 +159,12 @@ workflow {
         prior_ch = params.prior_preprocessed_dir
             ? Channel.value(file(params.prior_preprocessed_dir, checkIfExists: true))
             : Channel.value(noPriorLibrary())
-        PREPROCESS_MRI(starts('preprocess') ? requireParam('nifti_dir') : nifti_ch, prior_ch)
+        // Earlier raw NIfTI inputs for an incremental run (comma-separated roots). The prior
+        // library only pins references via its coreg log; it keeps no copy of raw images.
+        def prior_nifti = params.prior_nifti_dirs
+            ? params.prior_nifti_dirs.toString().tokenize(',').collect { p -> file(p.trim(), checkIfExists: true) }
+            : [file("${projectDir}/assets/NO_PRIOR_NIFTI")]
+        PREPROCESS_MRI(starts('preprocess') ? requireParam('nifti_dir') : nifti_ch, prior_ch, Channel.value(prior_nifti))
         // Segment from the face-free export, not the full library, so a chained run exercises
         // exactly the files a user would upload to start at segment (see
         // modules/local/export_face_free_library).
@@ -176,7 +181,7 @@ workflow {
             ? Channel.value(file(params.model_dir, checkIfExists: true))
             : Channel.value(noModelDir())
         SEGMENT(starts('segment') ? requireParam('preprocessed_dir') : preprocessed_ch, model_dir_ch)
-        segmented_ch = SEGMENT.out.segmented.map { _name, dir -> dir }.collect()
+        segmented_ch = SEGMENT.out.segmented.collect()
     }
 
     if (runs('quantify')) {

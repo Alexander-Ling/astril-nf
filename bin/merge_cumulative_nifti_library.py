@@ -11,8 +11,11 @@ failing -- which is exactly the reference-space drift this pipeline must prevent
 new exams into an existing preprocessed library.
 
 This script:
-  1. Unions the new NIfTI exams with the raw-passthrough exams carried forward from the prior
-     Stage 2 output (if any), preserving the `{patient}/{exam}/...` layout astril expects.
+  1. Unions the new NIfTI exams with the earlier raw NIfTI inputs supplied explicitly via
+     --prior-nifti-dir (if any), preserving the `{patient}/{exam}/...` layout astril expects.
+     The prior preprocessed library itself carries no raw images (they're whole-head, i.e.
+     identifiable, and would only duplicate data the caller already has), so the earlier exams
+     must be passed in rather than carried forward inside it.
   2. Locates the most recent `coreg_log_*.csv` in the prior library (if any) and copies it out
      for the caller to pass as `--old_coreg_log`.
   3. Fails loudly -- instead of letting astril silently re-pick -- if any patient's previously
@@ -96,11 +99,13 @@ def main() -> int:
     parser.add_argument("--new-nifti-dir", required=True, type=Path,
                          help="Newly converted/uploaded NIfTI exams, {patient}/{exam}/...")
     parser.add_argument("--prior-library-dir", type=Path, default=None,
-                         help="Prior Stage 2 output dataset (optional; omit for a first run).")
-    parser.add_argument("--raw-passthrough-subdir", default="_raw_passthrough",
-                         help="Subdirectory of --prior-library-dir carrying forward the "
-                              "original (pre-preprocessing) NIfTI inputs of already-processed "
-                              "exams (default: _raw_passthrough).")
+                         help="Prior Stage 2 preprocessed library (optional; omit for a first "
+                              "run). Only its coreg log is used: it pins each patient's "
+                              "registration reference.")
+    parser.add_argument("--prior-nifti-dir", type=Path, action="append", default=[],
+                         help="Earlier raw NIfTI library, {patient}/{exam}/... (repeatable). "
+                              "Together with --new-nifti-dir it must contain every exam to "
+                              "preprocess, including each prior patient's reference exam.")
     parser.add_argument("--output-dir", required=True, type=Path,
                          help="Union directory to build; pass this as preprocess_brain_mris's "
                               "--in_dir.")
@@ -110,11 +115,10 @@ def main() -> int:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    prior_passthrough = (
-        args.prior_library_dir / args.raw_passthrough_subdir
-        if args.prior_library_dir else None
-    )
-    _union_patient_trees(prior_passthrough, args.output_dir, "prior preprocessed library")
+    # Earlier inputs first: on a duplicate exam, keep the copy the prior run's references
+    # were chosen from.
+    for prior_nifti in args.prior_nifti_dir:
+        _union_patient_trees(prior_nifti, args.output_dir, f"earlier NIfTI {prior_nifti}")
     _union_patient_trees(args.new_nifti_dir, args.output_dir, "new NIfTI exams")
 
     coreg_log = _find_most_recent_coreg_log(args.prior_library_dir)
@@ -134,8 +138,8 @@ def main() -> int:
                 "patients' previously-chosen registration reference exam is missing from "
                 "this run's merged NIfTI input. Continuing would let astril silently pick a "
                 "*new* reference for these patients, putting their older and newer exams in "
-                "different reference spaces. Restore the missing exam(s) or exclude these "
-                "patients from this run:\n" + lines
+                "different reference spaces. Supply the earlier NIfTI input(s) holding these "
+                "exams (prior_nifti_dirs), or exclude these patients from this run:\n" + lines
             )
         print(
             f"[merge_cumulative_nifti_library] Verified reference exams present for "

@@ -1,7 +1,7 @@
 // Stage 2 optional output: per-patient QC PDFs (center-axial-slice montages across all of a
 // patient's preprocessed exams). Runs over the whole assembled library, not per-patient, so
-// it is its own process after COLLECT_PREPROCESS_STATE. `_raw_passthrough/` (carried-forward
-// raw exams, not a patient folder) is excluded from the scan.
+// it is its own process after COLLECT_PREPROCESS_STATE. `_raw_passthrough/` (raw exams carried
+// forward by astril-nf < 0.2.0 libraries, not a patient folder) is excluded from the scan.
 process GENERATE_QC_PDFS {
     tag 'qc'
     label 'process_low'

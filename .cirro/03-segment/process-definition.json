@@ -8,7 +8,7 @@
   ],
   "childProcessIds": [],
   "name": "astril - Run from preprocessed images",
-  "desc": "The normal entry point for real patient data. Segments a face-free preprocessed library (GBM_seg_v2 labels: 1=necrosis/non-enhancing tumor, 2=edema, 3=enhancing tumor, 4=resection cavity; or a custom model) and quantifies volumes. Upload the 02-preprocess/upload_preprocessed/ folder written by local preprocessing. Inputs holding un-skull-stripped images are refused. Versions: astril-nf 0.1.0, astril 0.7.30.",
+  "desc": "The normal entry point for real patient data. Segments a face-free preprocessed library (GBM_seg_v2 labels: 1=necrosis/non-enhancing tumor, 2=edema, 3=enhancing tumor, 4=resection cavity; or a custom model) and quantifies volumes. Upload the 02-preprocess/upload_preprocessed/ folder written by local preprocessing. Inputs holding un-skull-stripped images are refused. Versions: astril-nf 0.2.0, astril 0.7.31.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",

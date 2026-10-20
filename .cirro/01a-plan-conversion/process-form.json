@@ -65,13 +65,34 @@
       "prior_preprocessed_dataset": {
         "type": "string",
         "title": "Preprocess: prior preprocessed library (optional, test data only)",
-        "description": "Leave blank for a first-time run. To add new exams to an existing library without changing any patient's reference space, select the dataset of an earlier run that preprocessed it. That dataset carries the raw whole-head input images (_raw_passthrough) needed to rebuild the library, so incremental preprocessing of real patient data must be done locally, not on Cirro.",
+        "description": "Leave blank for a first-time run. To add new exams to an existing library without changing any patient's reference space, select the dataset of an earlier run that preprocessed it (its coreg log pins each patient's reference), AND select the earlier NIfTI inputs that library was built from below -- every exam is re-preprocessed together. NIfTI is PHI for real patients, so incremental preprocessing of real data is done locally.",
         "pathType": "dataset",
         "process": [
           "process-astril-plan-conversion-1-0",
           "process-astril-convert-1-0",
           "process-astril-preprocess-1-0"
         ]
+      },
+      "prior_nifti_pipeline_datasets": {
+        "type": "string",
+        "title": "Preprocess: earlier NIfTI from astril-nf runs (with a prior library)",
+        "description": "Datasets of earlier astril-nf runs whose converted NIfTI (01b-convert/nifti_out) the prior library was built from.",
+        "pathType": "dataset",
+        "process": [
+          "process-astril-plan-conversion-1-0",
+          "process-astril-convert-1-0"
+        ],
+        "multiple": true
+      },
+      "prior_nifti_upload_datasets": {
+        "type": "string",
+        "title": "Preprocess: earlier NIfTI uploads (with a prior library)",
+        "description": "Uploaded NIfTI datasets ({patient}/{exam}/... at the top level) the prior library was built from.",
+        "pathType": "dataset",
+        "process": [
+          "custom_dataset"
+        ],
+        "multiple": true
       },
       "preprocess_n_workers": {
         "type": "integer",
