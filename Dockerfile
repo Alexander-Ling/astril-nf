@@ -42,9 +42,21 @@ ARG ASTRIL_GIT_REF=0edca6fbed6248f8dd1fbece2478a191cdd7bb0f
 # Cache buster: bump this (or pass --build-arg) to force re-pulling ASTRIL_GIT_REF and
 # re-running the model downloads below, since Docker would otherwise cache this layer forever.
 ARG ASTRIL_CACHEBUST=0
+# PyTorch is installed FIRST, pinned to a CUDA 12.6 build: astril only requires `torch>=2.0`, so
+# left alone pip pulls PyPI's newest default wheel, which is built for CUDA 13 and needs an
+# NVIDIA driver >= 580 on the host. Cirro/AWS Batch GPU instances run whatever driver their AMI
+# ships, which we don't control; a cu126 build runs on drivers back to the 525 series as well as
+# current ones. Same torch version as the image validated locally (2.14.0), just a different CUDA
+# build. pip then treats astril's `torch>=2.0` as already satisfied and leaves it alone.
+ARG TORCH_VERSION=2.14.0
+ARG TORCHVISION_VERSION=0.29.0
+ARG TORCH_CUDA=cu126
 RUN echo "astril code cachebust=${ASTRIL_CACHEBUST}" \
     && python3 -m pip install --upgrade pip \
-    && python3 -m pip install "astril[preprocessing] @ git+${ASTRIL_GIT_URL}@${ASTRIL_GIT_REF}"
+    && python3 -m pip install --index-url "https://download.pytorch.org/whl/${TORCH_CUDA}" \
+        "torch==${TORCH_VERSION}" "torchvision==${TORCHVISION_VERSION}" \
+    && python3 -m pip install "astril[preprocessing] @ git+${ASTRIL_GIT_URL}@${ASTRIL_GIT_REF}" \
+    && python3 -c "import torch; v = torch.version.cuda; assert v.startswith('12.'), f'torch CUDA {v} (expected 12.x): a dependency upgraded torch'"
 # dcm2niix is already a declared astril dependency (pyproject.toml) and is installed above;
 # astril's ensure_dcm2niix_accessible() resolves it on PATH.
 
