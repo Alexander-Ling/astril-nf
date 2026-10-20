@@ -8,7 +8,7 @@
     "process-astril-quantify-1-0"
   ],
   "name": "astril: GBM segmentation",
-  "desc": "Stage 3a - segmentation inference (model training excluded) over a preprocessed NIfTI library, via astril's generic contract-driven segment CLI. Pick a registered model family from the dropdown (GBM_seg_v2 is the only one today; labels: 0=background, 1=necrosis/non-enhancing tumor, 2=edema/non-FLAIR hyperintensity, 3=enhancing tumor/tissue, 4=resection cavity), or pick an uploaded model directory (its own pipeline.json plus checkpoints) in the 'Custom model' field to run a self-trained model not published through astril's model manifest -- it takes precedence over the dropdown when selected. Stage 3b (quantify) runs automatically right after, using the segmentation_provenance.json sidecar this stage writes next to each exam's output -- disable with 'Skip automatic quantify' to correct masks manually before quantifying. Versions: astril-nf 0.1.0, astril 0.7.30.",
+  "desc": "Stage 3a - segmentation inference over a preprocessed NIfTI library. Pick a model family from the dropdown (GBM_seg_v2 labels: 1=necrosis/non-enhancing tumor, 2=edema/non-FLAIR hyperintensity, 3=enhancing tumor/tissue, 4=resection cavity), or select an uploaded model directory in 'Custom model' (overrides the dropdown). Stage 3b (quantify) runs automatically afterwards; enable 'Skip automatic quantify' to correct masks manually first. Versions: astril-nf 0.1.0, astril 0.7.30.",
   "executor": "NEXTFLOW",
   "category": "Image Analysis",
   "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",

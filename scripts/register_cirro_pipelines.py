@@ -37,6 +37,10 @@ def load_definitions():
         d = json.loads(path.read_text(encoding="utf-8"))
         if not d["id"].startswith(ID_PREFIX):
             sys.exit(f"{path}: id {d['id']!r} doesn't start with {ID_PREFIX!r}; refusing to touch it")
+        # Cirro's update endpoint enforces this (create doesn't), so check up front rather than
+        # failing halfway through a run.
+        if not 4 <= len(d["desc"]) <= 500:
+            sys.exit(f"{path}: desc is {len(d['desc'])} chars; Cirro requires 4-500")
         if d["code"]["repository"] != "GITHUBPUBLIC":
             sys.exit(f"{path}: only public GitHub repos are supported here")
         d["_folder"] = path.parent.relative_to(REPO_ROOT).as_posix()
