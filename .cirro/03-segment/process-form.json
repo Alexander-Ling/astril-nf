@@ -1,0 +1,57 @@
+{
+  "ui": {},
+  "form": {
+    "type": "object",
+    "properties": {
+      "model_dataset": {
+        "type": "string",
+        "title": "Custom model (optional)",
+        "description": "Leave blank to use 'Model family' below. To run a self-trained model not published through astril's model manifest, upload its directory (its pipeline.json plus checkpoints) as a 'Files' dataset and select it here -- it then takes precedence over 'Model family'.",
+        "pathType": "dataset",
+        "process": [
+          "custom_dataset"
+        ]
+      },
+      "model_family": {
+        "type": "string",
+        "title": "Model family",
+        "description": "A model family registered in astril's models.json. Ignored if a custom model is selected above. This dropdown is a static list, not a live registry lookup -- add a new family here by hand when one is added to astril's models.json.",
+        "enum": [
+          "GBM_seg_v2"
+        ],
+        "default": "GBM_seg_v2"
+      },
+      "slice_batch_size": {
+        "type": "integer",
+        "title": "Slice batch size",
+        "description": "Memory/throughput tradeoff for 2.5D inference.",
+        "default": 1
+      },
+      "brainmask_pattern": {
+        "type": "string",
+        "title": "Brainmask filename pattern",
+        "default": "_brainmask.nii.gz"
+      },
+      "segment_overwrite": {
+        "type": "boolean",
+        "title": "Overwrite existing segmentation outputs",
+        "default": false
+      },
+      "skip_quantify": {
+        "type": "boolean",
+        "title": "Skip automatic quantify",
+        "description": "Stage 3b (quantify) normally runs automatically right after segmentation. Enable this to stop after segmentation alone -- e.g. to manually correct masks before quantifying -- then run the separate 'astril: Quantify segmentation volumes' process afterward.",
+        "default": false
+      },
+      "labels_json_dataset": {
+        "type": "string",
+        "title": "Labels contract (optional, for automatic quantify)",
+        "description": "Rarely needed: the model's own pipeline.json labels normally carry through to Stage 3b automatically via segmentation_provenance.json. To override, Upload a labels.json ({\"labels\": {\"1\": \"...\", ...}}) as a 'Files' dataset (exactly one .json) and select it here.",
+        "pathType": "dataset",
+        "process": [
+          "custom_dataset"
+        ]
+      }
+    }
+  }
+}

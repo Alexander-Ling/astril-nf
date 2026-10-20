@@ -1,0 +1,31 @@
+{
+  "commands": [
+    {
+      "command": "hot.Parquet",
+      "params": {
+        "desc": "Segmentation volumes (mm3), one row per segmentation file. Columns are named from the segmenting model's own labels (declared in the model's pipeline.json, carried through astril's segmentation_provenance.json sidecar) -- this list matches GBM_seg_v2, today's only available model. A manually edited mask (no provenance sidecar) or a future model family can add columns not listed here; they still appear in 03b-quantify/volumes.tsv.",
+        "name": "Segmentation Volumes",
+        "source": "$data_directory/03b-quantify/volumes.tsv",
+        "target": "volumes.parquet",
+        "url": "",
+        "read_csv": {
+          "parse": {
+            "delimiter": "\t"
+          }
+        },
+        "cols": [
+          { "col": "File_path", "name": "File path", "desc": "Full path to the segmentation file this row was computed from" },
+          { "col": "File_name", "name": "File name", "desc": "Segmentation file name" },
+          { "col": "necrosis_non_enhancing_tumor_Volume_mm3", "name": "Necrosis / non-enhancing tumor volume (mm3)", "desc": "GBM_seg_v2 label 1" },
+          { "col": "edema_non_flair_hyperintensity_Volume_mm3", "name": "Edema volume (mm3)", "desc": "GBM_seg_v2 label 2: edema / surrounding non-FLAIR hyperintensity" },
+          { "col": "enhancing_tumor_tissue_Volume_mm3", "name": "Enhancing tumor volume (mm3)", "desc": "GBM_seg_v2 label 3: enhancing tumor / tissue" },
+          { "col": "resection_cavity_Volume_mm3", "name": "Resection cavity volume (mm3)", "desc": "GBM_seg_v2 label 4: resection cavity" }
+        ]
+      }
+    },
+    {
+      "command": "hot.Manifest",
+      "params": {}
+    }
+  ]
+}

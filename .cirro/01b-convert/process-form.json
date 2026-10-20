@@ -1,0 +1,40 @@
+{
+  "ui": {},
+  "form": {
+    "type": "object",
+    "properties": {
+      "organized_dataset": {
+        "type": "string",
+        "title": "Organized DICOM dataset (Stage 0 output)",
+        "description": "The 'astril: Organize DICOM' dataset the selected conversion plan was generated from.",
+        "pathType": "dataset",
+        "process": [
+          "process-astril-organize-1-0"
+        ]
+      },
+      "edited_plan_dataset": {
+        "type": "string",
+        "title": "Edited conversion plan (optional)",
+        "description": "Leave blank to convert using the selected Stage 1a plan as-is. To use a hand-edited plan instead, upload it (type 'Tables (TSV/CSV)' or 'Files', exactly one .csv) and select it here. Edit rows/selections only -- keep the folder/path columns unchanged so they can be re-pointed at this run's copies.",
+        "pathType": "dataset",
+        "process": [
+          "table_csv_tsv",
+          "custom_dataset"
+        ]
+      },
+      "convert_n_workers": {
+        "type": "integer",
+        "title": "Parallel workers",
+        "description": "Leave blank to use the task's allocated CPU count (recommended); set only to override."
+      },
+      "convert_overwrite": {
+        "type": "boolean",
+        "title": "Overwrite existing NIfTI outputs",
+        "default": false
+      }
+    },
+    "required": [
+      "organized_dataset"
+    ]
+  }
+}

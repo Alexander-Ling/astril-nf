@@ -1,0 +1,2 @@
+# Nextflow/shell/Python files run on Linux (WSL, Docker, AWS Batch) -- keep LF everywhere.
+* text=auto eol=lf

@@ -1,0 +1,32 @@
+{
+  "ui": {},
+  "form": {
+    "type": "object",
+    "properties": {
+      "patient_metadata_dataset": {
+        "type": "string",
+        "title": "Filled-in patient metadata table",
+        "description": "An uploaded dataset (type 'Tables (TSV/CSV)' or 'Files') containing exactly one .csv: Stage 0's patient_metadata_blank.csv after you've filled it in.",
+        "pathType": "dataset",
+        "process": [
+          "table_csv_tsv",
+          "custom_dataset"
+        ]
+      },
+      "min_slices": {
+        "type": "integer",
+        "title": "Minimum slices",
+        "description": "Minimum slice count for a series to be considered a real 3D volume.",
+        "default": 10
+      },
+      "organize_n_workers": {
+        "type": "integer",
+        "title": "Parallel workers",
+        "description": "Leave blank to use the task's allocated CPU count (recommended); set only to override."
+      }
+    },
+    "required": [
+      "patient_metadata_dataset"
+    ]
+  }
+}

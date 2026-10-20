@@ -1,0 +1,12 @@
+{
+  "stage": "segment",
+  "outdir": "$.dataset.dataPath",
+  "preprocessed_dir": "$.inputs[0].dataPath",
+  "model_dataset": "$.dataset.params.model_dataset",
+  "labels_json_dataset": "$.dataset.params.labels_json_dataset",
+  "model_family": "$.dataset.params.model_family",
+  "slice_batch_size": "$.dataset.params.slice_batch_size",
+  "brainmask_pattern": "$.dataset.params.brainmask_pattern",
+  "segment_overwrite": "$.dataset.params.segment_overwrite",
+  "skip_quantify": "$.dataset.params.skip_quantify"
+}

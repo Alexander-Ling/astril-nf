@@ -1,0 +1,32 @@
+{
+  "id": "process-astril-segment-1-0",
+  "parentProcessIds": [
+    "process-astril-preprocess-1-0",
+    "custom_dataset"
+  ],
+  "childProcessIds": [
+    "process-astril-quantify-1-0"
+  ],
+  "name": "astril: GBM segmentation",
+  "desc": "Stage 3a - segmentation inference (model training excluded) over a preprocessed NIfTI library, via astril's generic contract-driven segment CLI. Pick a registered model family from the dropdown (GBM_seg_v2 is the only one today; labels: 0=background, 1=necrosis/non-enhancing tumor, 2=edema/non-FLAIR hyperintensity, 3=enhancing tumor/tissue, 4=resection cavity), or pick an uploaded model directory (its own pipeline.json plus checkpoints) in the 'Custom model' field to run a self-trained model not published through astril's model manifest -- it takes precedence over the dropdown when selected. Stage 3b (quantify) runs automatically right after, using the segmentation_provenance.json sidecar this stage writes next to each exam's output -- disable with 'Skip automatic quantify' to correct masks manually before quantifying.",
+  "executor": "NEXTFLOW",
+  "category": "Image Analysis",
+  "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",
+  "code": {
+    "repository": "GITHUBPUBLIC",
+    "script": "main.nf",
+    "uri": "Alexander-Ling/astril-nf",
+    "version": "main",
+    "executorVersion": "26.04.0"
+  },
+  "computeDefaults": [
+    {
+      "executor": "NEXTFLOW",
+      "json": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-compute.config",
+      "name": "Default"
+    }
+  ],
+  "paramMapJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-input.json",
+  "formJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-form.json",
+  "preProcessScript": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/preprocess.py"
+}

@@ -1,0 +1,13 @@
+{
+  "ui": {},
+  "form": {
+    "type": "object",
+    "properties": {
+      "organize_n_workers": {
+        "type": "integer",
+        "title": "Parallel workers",
+        "description": "Threads for DICOM metadata reads/copies (I/O bound). Leave blank to use the task's allocated CPU count (recommended); set only to override."
+      }
+    }
+  }
+}

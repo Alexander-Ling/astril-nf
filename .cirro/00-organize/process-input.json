@@ -1,0 +1,6 @@
+{
+  "stage": "organize",
+  "outdir": "$.dataset.dataPath",
+  "dicom_dir": "$.inputs[0].dataPath",
+  "organize_n_workers": "$.dataset.params.organize_n_workers"
+}

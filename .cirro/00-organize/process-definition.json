@@ -1,0 +1,28 @@
+{
+  "id": "process-astril-organize-1-0",
+  "parentProcessIds": [
+    "custom_dataset"
+  ],
+  "childProcessIds": [],
+  "name": "astril: Organize DICOM library",
+  "desc": "Stage 0 - route an arbitrary DICOM library into astril's structured Patient/Exam/Series tree, build a DICOM index, and generate a blank per-patient metadata table for the user to fill in before Stage 1a.",
+  "executor": "NEXTFLOW",
+  "category": "Image Analysis",
+  "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",
+  "code": {
+    "repository": "GITHUBPUBLIC",
+    "script": "main.nf",
+    "uri": "Alexander-Ling/astril-nf",
+    "version": "main",
+    "executorVersion": "26.04.0"
+  },
+  "computeDefaults": [
+    {
+      "executor": "NEXTFLOW",
+      "json": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-compute.config",
+      "name": "Default"
+    }
+  ],
+  "paramMapJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-input.json",
+  "formJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-form.json"
+}

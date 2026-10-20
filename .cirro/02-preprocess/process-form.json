@@ -1,0 +1,90 @@
+{
+  "ui": {},
+  "form": {
+    "type": "object",
+    "properties": {
+      "prior_preprocessed_dataset": {
+        "type": "string",
+        "title": "Prior preprocessed library (optional)",
+        "description": "Leave blank for a first-time run. To add new exams to an existing library without changing any patient's reference space, select that library's previous 'astril: Preprocess' dataset here.",
+        "pathType": "dataset",
+        "process": [
+          "process-astril-preprocess-1-0"
+        ]
+      },
+      "preprocess_n_workers": {
+        "type": "integer",
+        "title": "Parallel workers",
+        "description": "Exam-level parallelism within this run. Also sets the compute request: this many CPUs, and this many x 'Memory per worker' GB, unless 'Total memory override' is set. The default (14 workers x 4 GB = 56 GB) fits a g5.4xlarge (16 vCPU / 64 GiB); going above that moves the task to a larger, more expensive instance.",
+        "default": 14
+      },
+      "preprocess_memory_gb_per_worker": {
+        "type": "integer",
+        "title": "Memory per worker (GB)",
+        "description": "astril doesn't budget memory itself -- this is a starting heuristic, not a measured figure. Tune against your own data if runs OOM-kill (exit 137) or over-provision.",
+        "default": 4
+      },
+      "preprocess_memory_gb": {
+        "type": "integer",
+        "title": "Total memory override (GB)",
+        "description": "Leave blank to auto-compute as parallel workers x memory per worker. If set too low for the worker count, a warning is logged before the run starts."
+      },
+      "anchor_label": {
+        "type": "string",
+        "title": "Anchor modality",
+        "description": "Modality co-registration and skull-stripping are anchored to.",
+        "default": "T1c"
+      },
+      "registration_strategy": {
+        "type": "string",
+        "title": "Registration strategy",
+        "enum": [
+          "fast",
+          "medium",
+          "accurate"
+        ],
+        "default": "medium"
+      },
+      "normalization_method": {
+        "type": "string",
+        "title": "Intensity normalization method",
+        "enum": [
+          "robust_zscore",
+          "zscore"
+        ],
+        "default": "robust_zscore"
+      },
+      "final_dims": {
+        "type": "string",
+        "title": "Final voxel grid (NX,NY,NZ)",
+        "default": "240,240,155"
+      },
+      "final_voxels": {
+        "type": "string",
+        "title": "Final voxel spacing mm (SX,SY,SZ)",
+        "default": "1.0,1.0,1.0"
+      },
+      "use_gpu": {
+        "type": "boolean",
+        "title": "Use GPU for skull-stripping (HD-BET)",
+        "default": true
+      },
+      "enable_tta": {
+        "type": "boolean",
+        "title": "Enable HD-BET test-time augmentation",
+        "description": "Improves mask quality; recommended when GPU is available.",
+        "default": true
+      },
+      "generate_qc": {
+        "type": "boolean",
+        "title": "Generate QC PDFs",
+        "default": true
+      },
+      "preprocess_overwrite": {
+        "type": "boolean",
+        "title": "Overwrite existing preprocessed outputs",
+        "default": false
+      }
+    }
+  }
+}

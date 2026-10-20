@@ -1,0 +1,12 @@
+{
+  "stage": "quantify",
+  "outdir": "$.dataset.dataPath",
+  "seg_dir": "$.inputs[0].dataPath",
+  "labels_json_dataset": "$.dataset.params.labels_json_dataset",
+  "seg_filename_pattern": "$.dataset.params.seg_filename_pattern",
+  "total_levels": "$.dataset.params.total_levels",
+  "merge_before_quantify": "$.dataset.params.merge_before_quantify",
+  "merge_input_patterns": "$.dataset.params.merge_input_patterns",
+  "merge_output_pattern": "$.dataset.params.merge_output_pattern",
+  "quantify_n_threads": "$.dataset.params.quantify_n_threads"
+}

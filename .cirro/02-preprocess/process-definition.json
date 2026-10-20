@@ -1,0 +1,30 @@
+{
+  "id": "process-astril-preprocess-1-0",
+  "parentProcessIds": [
+    "process-astril-convert-1-0",
+    "custom_dataset"
+  ],
+  "childProcessIds": [],
+  "name": "astril: Preprocess MRI (register, skull-strip, normalize)",
+  "desc": "Stage 2 - co-register, skull-strip (HD-BET), and intensity-normalize a NIfTI library, producing an aligned, skull-stripped preprocessed library. Optionally continues an existing preprocessed library (select it in the 'Prior preprocessed library' field) -- new exams for already-known patients are registered into the SAME reference space chosen previously, never a re-picked one. QC PDFs are an optional extra output.",
+  "executor": "NEXTFLOW",
+  "category": "Image Analysis",
+  "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",
+  "code": {
+    "repository": "GITHUBPUBLIC",
+    "script": "main.nf",
+    "uri": "Alexander-Ling/astril-nf",
+    "version": "main",
+    "executorVersion": "26.04.0"
+  },
+  "computeDefaults": [
+    {
+      "executor": "NEXTFLOW",
+      "json": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-compute.config",
+      "name": "Default"
+    }
+  ],
+  "paramMapJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-input.json",
+  "formJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-form.json",
+  "preProcessScript": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/preprocess.py"
+}

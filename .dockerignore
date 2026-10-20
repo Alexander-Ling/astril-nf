@@ -1,0 +1,5 @@
+# The image only COPYs these two files; keep everything else (work/, results/, .nextflow/, ...)
+# out of the build context.
+*
+!LICENSE
+!THIRD_PARTY_NOTICES.md

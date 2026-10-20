@@ -1,0 +1,10 @@
+{
+  "stage": "plan_convert",
+  "outdir": "$.dataset.dataPath",
+  "organized_dir": "$.inputs[0].dataPath|/00-organize/organized_dicoms",
+  "dicom_index": "$.inputs[0].dataPath|/00-organize/dicom_index.csv",
+  "organized_dir_root": "$.inputs[0].dataPath|/00-organize/organized_dicoms_root.txt",
+  "patient_metadata_dataset": "$.dataset.params.patient_metadata_dataset",
+  "min_slices": "$.dataset.params.min_slices",
+  "organize_n_workers": "$.dataset.params.organize_n_workers"
+}

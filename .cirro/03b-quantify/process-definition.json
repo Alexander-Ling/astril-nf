@@ -1,0 +1,30 @@
+{
+  "id": "process-astril-quantify-1-0",
+  "parentProcessIds": [
+    "process-astril-segment-1-0",
+    "custom_dataset"
+  ],
+  "childProcessIds": [],
+  "name": "astril: Quantify segmentation volumes",
+  "desc": "Stage 3b - per-class segmentation volumes (mm3) from a set of segmentation masks. Runs automatically as part of Stage 3a (segment) by default; register/run this separately to re-quantify a manually corrected or replacement set of masks (optionally merging multiple segmentation sources first) without re-running segmentation.",
+  "executor": "NEXTFLOW",
+  "category": "Image Analysis",
+  "documentationUrl": "https://github.com/Alexander-Ling/astril-nf#readme",
+  "code": {
+    "repository": "GITHUBPUBLIC",
+    "script": "main.nf",
+    "uri": "Alexander-Ling/astril-nf",
+    "version": "main",
+    "executorVersion": "26.04.0"
+  },
+  "computeDefaults": [
+    {
+      "executor": "NEXTFLOW",
+      "json": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-compute.config",
+      "name": "Default"
+    }
+  ],
+  "paramMapJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-input.json",
+  "formJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-form.json",
+  "webOptimizationJson": "s3://<RESOURCES_BUCKET>/<PROCESS_DIRECTORY>/process-output.json"
+}

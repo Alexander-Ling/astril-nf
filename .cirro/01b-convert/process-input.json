@@ -1,0 +1,11 @@
+{
+  "stage": "convert",
+  "outdir": "$.dataset.dataPath",
+  "conversion_plan": "$.inputs[0].dataPath|/01a-plan-conversion/conversion_plan.csv",
+  "organized_dir_root": "$.inputs[0].dataPath|/01a-plan-conversion/organized_dicoms_root.txt",
+  "nifti_dir_root": "$.inputs[0].dataPath|/01a-plan-conversion/nifti_root.txt",
+  "organized_dir": "$.dataset.params.organized_dataset|/data/00-organize/organized_dicoms",
+  "edited_plan_dataset": "$.dataset.params.edited_plan_dataset",
+  "convert_n_workers": "$.dataset.params.convert_n_workers",
+  "convert_overwrite": "$.dataset.params.convert_overwrite"
+}
