@@ -49,7 +49,7 @@ nextflow run main.nf -profile docker,test --stage organize --dicom_dir /path/to/
 ```
 
 Every process runs in `params.container` (default: the published
-`alexanderling/ling_lab:astril-nf-<version>` image); pass `--container astril-nf:test` to use a
+`ghcr.io/alexander-ling/astril-nf:<version>` image); pass `--container astril-nf:test` to use a
 locally built image instead.
 
 See `nextflow.config` for the full parameter list per stage. GPU wiring is applied per process,
@@ -193,8 +193,8 @@ present in the union, rather than letting astril silently re-pick. Pass a prior 
 ## Docker image
 
 `Dockerfile` builds one CUDA-capable image used by every stage (Cirro/Nextflow selects CPU vs.
-GPU instance types per process), published as `alexanderling/ling_lab:astril-nf-<version>` on
-Docker Hub. astril is installed directly from GitHub, pinned to an exact commit
+GPU instance types per process), published as `ghcr.io/alexander-ling/astril-nf:<version>` on
+GitHub Container Registry (public). astril is installed directly from GitHub, pinned to an exact commit
 (`ASTRIL_GIT_REF` in the Dockerfile) so a given image tag always contains the same astril code.
 Both the GBM model checkpoints (~1.8GB, via `astril-download-models`) and HD-BET's own pretrained
 parameters (~0.5GB, from Zenodo) are downloaded at **build** time, not pipeline runtime. See the
@@ -211,8 +211,8 @@ cause under the `CalledProcessError` astril reports on top of it).
 
 Build and publish with:
 ```
-docker build -t alexanderling/ling_lab:astril-nf-0.1.0 .
-docker push alexanderling/ling_lab:astril-nf-0.1.0
+docker build -t ghcr.io/alexander-ling/astril-nf:0.1.0 .
+docker push ghcr.io/alexander-ling/astril-nf:0.1.0
 ```
 To pick up newer astril code, bump `ASTRIL_GIT_REF` in the Dockerfile, bump the image tag (here and
 in `nextflow.config`'s `params.container`), and rebuild. `ASTRIL_CACHEBUST`
@@ -299,9 +299,11 @@ How the pieces fit:
   stage 2/3a/3b direct-upload contracts need patient folders at the top level).
 - The exact value a dataset picker passes (the dataset root is assumed; `preprocess.py` also
   accepts a path that already ends in `/data`).
-- Docker Hub pull rate limits: every new Batch instance pulls the ~7.5 GB image anonymously.
-  If large runs hit throttling, mirror the image to public ECR or quay.io and override
-  `params.container` in the `process-compute.config` files.
+- Image pull cost: every *new* Batch instance pulls the ~7.5 GB image from GHCR over the
+  internet (instances Batch reuses keep it cached), adding a few minutes of startup per instance.
+  If that matters at scale, ask Cirro whether they can host or cache the image inside their AWS
+  account (e.g. an ECR pull-through cache) and override `params.container` in the
+  `process-compute.config` files.
 - `.cirro/*/process-output.json`'s Parquet column list is a static preview of GBM_seg_v2's labels.
   Masks without a provenance sidecar, or a future model family, add columns it doesn't describe
   (they still appear in the TSV/Parquet, just without a curated name). Revisit when a second

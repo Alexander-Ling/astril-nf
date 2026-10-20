@@ -5,7 +5,7 @@
 astril-nf's own code (this repository) is licensed under
 [CC BY-NC-SA 4.0](LICENSE), the same license as [astril](https://github.com/Alexander-Ling/astril).
 That license covers this repository's code only. The Docker image
-(`alexanderling/ling_lab:astril-nf-*`) also bundles the third-party software and pretrained
+(`ghcr.io/alexander-ling/astril-nf`) also bundles the third-party software and pretrained
 weights below, each under its own terms. **Two of them (the HD-BET weights and the GBM_seg_v2
 weights) are restricted to non-commercial use**, so the image as a whole may only be used
 non-commercially.
