@@ -1,6 +1,7 @@
 include { MERGE_CUMULATIVE_NIFTI_LIBRARY } from '../../modules/local/merge_cumulative_nifti_library/main.nf'
 include { PREPROCESS_LIBRARY             } from '../../modules/local/preprocess_library/main.nf'
 include { GENERATE_QC_PDFS               } from '../../modules/local/generate_qc_pdfs/main.nf'
+include { asBool                         } from './utils.nf'
 include { EXPORT_FACE_FREE_LIBRARY       } from '../../modules/local/export_face_free_library/main.nf'
 
 workflow PREPROCESS_MRI {
@@ -18,7 +19,7 @@ workflow PREPROCESS_MRI {
     PREPROCESS_LIBRARY(MERGE_CUMULATIVE_NIFTI_LIBRARY.out.union_dir, old_coreg_log)
 
     qc_pdfs = Channel.empty()
-    if (params.generate_qc) {
+    if (asBool(params.generate_qc)) {
         GENERATE_QC_PDFS(PREPROCESS_LIBRARY.out.preprocessed_dir)
         qc_pdfs = GENERATE_QC_PDFS.out.qc_pdfs
     }

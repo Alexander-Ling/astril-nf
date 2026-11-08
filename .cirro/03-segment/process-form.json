@@ -41,6 +41,16 @@
         "description": "Memory/throughput tradeoff for 2.5D inference.",
         "default": 1
       },
+      "slice_overlap_mode": {
+        "type": "string",
+        "title": "Segment: slice overlap mode",
+        "description": "average (default, robust): one 2.5D window per slice, overlapping multi-slice predictions averaged. tile (fast): non-overlapping windows, ~3x fewer forward passes for GBM_seg_v2.",
+        "enum": [
+          "average",
+          "tile"
+        ],
+        "default": "average"
+      },
       "brainmask_pattern": {
         "type": "string",
         "title": "Segment: brainmask filename pattern",

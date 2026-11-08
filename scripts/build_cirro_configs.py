@@ -193,6 +193,13 @@ FIELDS = {
                 "enum": ["fast", "medium", "accurate"],
                 "default": "medium",
             },
+            "registration_backend": {
+                "type": "string",
+                "title": "Preprocess: registration engine",
+                "description": "auto (default): GPU when available (this stage runs on a GPU instance), else ITK. itk: the CPU reference implementation. gpu: CUDA port of the same ITK algorithms (final poses within ~0.02 mm of ITK).",
+                "enum": ["auto", "itk", "gpu"],
+                "default": "auto",
+            },
             "normalization_method": {
                 "type": "string",
                 "title": "Preprocess: intensity normalization method",
@@ -253,6 +260,13 @@ FIELDS = {
                 "title": "Segment: slice batch size",
                 "description": "Memory/throughput tradeoff for 2.5D inference.",
                 "default": 1,
+            },
+            "slice_overlap_mode": {
+                "type": "string",
+                "title": "Segment: slice overlap mode",
+                "description": "average (default, robust): one 2.5D window per slice, overlapping multi-slice predictions averaged. tile (fast): non-overlapping windows, ~3x fewer forward passes for GBM_seg_v2.",
+                "enum": ["average", "tile"],
+                "default": "average",
             },
             "brainmask_pattern": {
                 "type": "string",

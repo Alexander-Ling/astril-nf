@@ -15,6 +15,8 @@
 // preserved) or a list of independently-produced per-exam directories (from the optional
 // per-exam MERGE_SEG_VOLUMES step) -- either way everything is staged flat into this task's
 // work dir and astril's own recursive glob finds every matching file regardless of depth.
+include { asBool } from '../../../subworkflows/local/utils.nf'
+
 process QUANTIFY_VOLUMES {
     tag 'quantify_volumes'
     label 'process_low'
@@ -39,7 +41,7 @@ process QUANTIFY_VOLUMES {
     script:
     // After an upstream merge, the file to quantify is the merged output, not the original
     // per-source pattern used only to locate exam directories.
-    def pattern = params.merge_before_quantify ? params.merge_output_pattern : params.seg_filename_pattern
+    def pattern = asBool(params.merge_before_quantify) ? params.merge_output_pattern : params.seg_filename_pattern
     def n_threads = params.quantify_n_threads ?: task.cpus
     def total_levels_flag = params.total_levels ? "--total_levels ${params.total_levels}" : ''
     def has_labels_json = labels_json_file.name != 'NO_LABELS_JSON'

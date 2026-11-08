@@ -1,6 +1,6 @@
 include { MERGE_SEG_VOLUMES } from '../../modules/local/merge_seg_volumes/main.nf'
 include { QUANTIFY_VOLUMES  } from '../../modules/local/quantify_volumes/main.nf'
-include { findLeafDirsContaining } from './utils.nf'
+include { asBool; findLeafDirsContaining } from './utils.nf'
 
 workflow QUANTIFY {
     take:
@@ -11,7 +11,7 @@ workflow QUANTIFY {
                  // sidecar of their own (e.g. entering Stage 3b directly with externally-produced masks)
 
     main:
-    if (params.merge_before_quantify) {
+    if (asBool(params.merge_before_quantify)) {
         // Overlaying multiple segmentation sources (model output + a manually corrected mask,
         // say) is an independent, per-exam operation, so it's still worth Nextflow-level fan-out
         // here even though quantification itself no longer is (see QUANTIFY_VOLUMES).

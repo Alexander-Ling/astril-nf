@@ -12,6 +12,8 @@
 // by default) or params.model_dir (a path to a self-trained model's own directory, not published
 // through astril's model manifest) is used; model_dir_override, when not the NO_MODEL_DIR
 // sentinel, takes precedence -- see main.nf and subworkflows/local/segment_gbm.nf.
+include { asBool } from '../../../subworkflows/local/utils.nf'
+
 process SEGMENT_GBM {
     tag { patient_dir.toString().tokenize('/').last() }
     label 'gpu'
@@ -31,7 +33,7 @@ process SEGMENT_GBM {
     path '*.segment.log',  emit: console_log
 
     script:
-    def overwrite_flag = params.segment_overwrite ? '--overwrite_existing_outputs' : ''
+    def overwrite_flag = asBool(params.segment_overwrite) ? '--overwrite_existing_outputs' : ''
     def has_model_dir_override = model_dir_override.name != 'NO_MODEL_DIR'
     def model_flag = has_model_dir_override
         ? "--model_dir ${model_dir_override}"
@@ -48,6 +50,7 @@ process SEGMENT_GBM {
         ${model_flag} \\
         --segment_suffix '${params.seg_filename_pattern}' \\
         --slice_batch_size ${params.slice_batch_size} \\
+        --slice_overlap_mode ${params.slice_overlap_mode} \\
         --input_override brainmask=${params.brainmask_pattern} \\
         ${overwrite_flag} \\
         2>&1 | tee "\$name.segment.log"

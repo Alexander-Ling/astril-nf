@@ -6,6 +6,7 @@
   "model_dataset": "$.dataset.params.model_dataset",
   "model_family": "$.dataset.params.model_family",
   "slice_batch_size": "$.dataset.params.slice_batch_size",
+  "slice_overlap_mode": "$.dataset.params.slice_overlap_mode",
   "brainmask_pattern": "$.dataset.params.brainmask_pattern",
   "segment_overwrite": "$.dataset.params.segment_overwrite",
   "seg_filename_pattern": "$.dataset.params.seg_filename_pattern",

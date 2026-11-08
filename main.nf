@@ -14,6 +14,7 @@ include { CONVERT_DICOM      } from './subworkflows/local/convert_dicom.nf'
 include { PREPROCESS_MRI     } from './subworkflows/local/preprocess_mri.nf'
 include { SEGMENT            } from './subworkflows/local/segment_gbm.nf'
 include { QUANTIFY           } from './subworkflows/local/quantify.nf'
+include { asBool             } from './subworkflows/local/utils.nf'
 
 def noPriorLibrary() {
     return file("${projectDir}/assets/NO_PRIOR_LIBRARY")
@@ -95,7 +96,7 @@ workflow {
             "patient_metadata_blank.csv, then start the next run at --stage plan_convert."
     }
 
-    if (params.merge_before_quantify && !starts('quantify')) {
+    if (asBool(params.merge_before_quantify) && !starts('quantify')) {
         exit 1, "--merge_before_quantify overlays multiple segmentation sources for a single, " +
             "already-fixed set of exams -- it's for runs starting at --stage quantify " +
             "(re-quantifying a manually-edited/replacement mask set), not the quantify that " +

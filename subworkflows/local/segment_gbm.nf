@@ -1,5 +1,5 @@
 include { SEGMENT_GBM } from '../../modules/local/segment_gbm/main.nf'
-include { findLeafDirsContaining } from './utils.nf'
+include { asBool; findLeafDirsContaining } from './utils.nf'
 
 workflow SEGMENT {
     take:

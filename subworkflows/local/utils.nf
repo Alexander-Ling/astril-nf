@@ -8,6 +8,22 @@
 // paths, and Path.toFile() throws UnsupportedOperationException for anything that isn't on the
 // default (local) filesystem. The same calls work unchanged on local paths.
 
+// A boolean param's value. CLI overrides arrive as Strings (`--enable_tta false` is the String
+// "false", which Groovy treats as true); params files and nextflow.config give real Booleans.
+def asBool(value) {
+    if (value instanceof Boolean) {
+        return value
+    }
+    def s = value?.toString()?.trim()?.toLowerCase()
+    if (s in ['true', 'yes', '1']) {
+        return true
+    }
+    if (s in [null, '', 'false', 'no', '0', 'null']) {
+        return false
+    }
+    error "Not a boolean value: '${value}' (use true or false)"
+}
+
 def findLeafDirsContaining(dir, String nameSubstring) {
     def here = dir.listFiles()
     if (here == null) {

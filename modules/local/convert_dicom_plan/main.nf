@@ -8,6 +8,8 @@
 // paths rooted in Stage 1a's task directory (see astril/preprocess.py's `convert_dicom_plan`,
 // which uses these values directly with no re-joining against any `--dir`). They're rewritten
 // here to point at this task's own re-staged copies before executing.
+include { asBool } from '../../../subworkflows/local/utils.nf'
+
 process CONVERT_DICOM_PLAN {
     tag 'convert'
     label 'process_medium'
@@ -27,7 +29,7 @@ process CONVERT_DICOM_PLAN {
     path 'convert.log',      emit: console_log
 
     script:
-    def overwrite_flag = params.convert_overwrite ? '--overwrite' : ''
+    def overwrite_flag = asBool(params.convert_overwrite) ? '--overwrite' : ''
     def n_workers = params.convert_n_workers ?: task.cpus
     """
     set -o pipefail

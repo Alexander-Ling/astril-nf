@@ -18,6 +18,8 @@
 // it doesn't scale out across multiple Cirro/Batch instances the way a per-exam fan-out would.
 // For a single well-resourced GPU workstation this matches how astril is already run natively;
 // revisit if a future deployment needs to spread one library's preprocessing across machines.
+include { asBool } from '../../../subworkflows/local/utils.nf'
+
 process PREPROCESS_LIBRARY {
     tag 'preprocess_library'
     label 'gpu'
@@ -36,9 +38,9 @@ process PREPROCESS_LIBRARY {
     script:
     def has_old_log   = old_coreg_log.name != 'NO_OLD_COREG_LOG'
     def old_log_flag  = has_old_log ? "--old_coreg_log ${old_coreg_log}" : ''
-    def gpu_flag      = params.use_gpu ? '--use_gpu' : ''
-    def tta_flag      = (params.use_gpu && params.enable_tta) ? '--enable_tta' : ''
-    def overwrite_flag = params.preprocess_overwrite ? '--overwrite' : ''
+    def gpu_flag      = asBool(params.use_gpu) ? '--use_gpu' : ''
+    def tta_flag      = (asBool(params.use_gpu) && asBool(params.enable_tta)) ? '--enable_tta' : ''
+    def overwrite_flag = asBool(params.preprocess_overwrite) ? '--overwrite' : ''
     // params.preprocess_n_workers is the source of truth here (unlike the other stages' n_workers
     // params) -- this process's own cpus/memory request is DERIVED from it (conf/gpu.config),
     // not the other way around, so there's no oversubscription risk in using it directly.
@@ -55,6 +57,7 @@ process PREPROCESS_LIBRARY {
         --anchor_label ${params.anchor_label} \\
         --registration_strategy ${params.registration_strategy} \\
         --normalization_method ${params.normalization_method} \\
+        --registration_backend ${params.registration_backend} \\
         --final_dims ${params.final_dims} \\
         --final_voxels ${params.final_voxels} \\
         ${gpu_flag} \\

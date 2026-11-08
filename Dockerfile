@@ -13,17 +13,28 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     HOME=/root
 
+# Triton (astril's GPU registration kernels, see below) caches compiled kernels in ~/.triton by
+# default, which isn't writable if a runtime (e.g. Cirro/AWS Batch) runs the container as a
+# non-root user.
+ENV TRITON_CACHE_DIR=/tmp/triton_cache
+
 # Ubuntu 22.04's own apt archive ships python3.11 as build 3.11.0~rc1 (it predates jammy's
 # default 3.10 and was never updated in-place) -- missing stdlib additions finalized between rc1
 # and the real 3.11.0 release (e.g. sys.get_int_max_str_digits), which crashes modern PyTorch's
 # _dynamo polyfills at import time (AttributeError, surfaced via hd-bet -> nnunetv2 -> torch).
 # The deadsnakes PPA maintains genuinely current, patched Python builds for Ubuntu and is the
 # standard fix for this exact class of problem.
+#
+# gcc + python3.11-dev: astril's GPU registration backend (astril >= 0.7.34) runs Triton kernels,
+# and Triton JIT-compiles a small C launcher at first use, which needs a C compiler and Python.h.
+# The CUDA *runtime* base image has neither; without them astril's Triton self-test fails and it
+# quietly falls back to slower pure-torch kernels plus ITK resampling.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common \
     && add-apt-repository -y ppa:deadsnakes/ppa \
     && apt-get update && apt-get install -y --no-install-recommends \
-        python3.11 python3.11-venv python3.11-distutils \
+        python3.11 python3.11-venv python3.11-distutils python3.11-dev \
+        gcc libc6-dev \
         git curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
@@ -38,7 +49,7 @@ RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11 \
 ARG ASTRIL_GIT_URL=https://github.com/Alexander-Ling/astril
 # Pinned to an exact astril commit so a given image tag always contains the same code; bump
 # deliberately (and re-tag the image) when picking up astril changes.
-ARG ASTRIL_GIT_REF=2af29645e4ed3483bd36b23401093daf05f1b3a9
+ARG ASTRIL_GIT_REF=7a1180eab160a3a22d3259c5401272992642329b
 # Cache buster: bump this (or pass --build-arg) to force re-pulling ASTRIL_GIT_REF and
 # re-running the model downloads below, since Docker would otherwise cache this layer forever.
 ARG ASTRIL_CACHEBUST=0
@@ -90,8 +101,8 @@ COPY LICENSE THIRD_PARTY_NOTICES.md /licenses/astril-nf/
 # Version metadata. ASTRIL_VERSION must be bumped together with ASTRIL_GIT_REF; the build fails
 # if it doesn't match the installed package, so the label can't drift from the code. Declared
 # down here (not with ASTRIL_GIT_REF) so changing them doesn't invalidate the heavy layers above.
-ARG ASTRIL_NF_VERSION=0.2.0
-ARG ASTRIL_VERSION=0.7.31
+ARG ASTRIL_NF_VERSION=0.3.0
+ARG ASTRIL_VERSION=0.7.35
 RUN python3 -c "from importlib.metadata import version; v = version('astril'); assert v == '${ASTRIL_VERSION}', f'installed astril {v} != ASTRIL_VERSION ${ASTRIL_VERSION}'"
 
 LABEL org.opencontainers.image.source="https://github.com/Alexander-Ling/astril-nf" \
