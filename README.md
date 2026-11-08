@@ -93,6 +93,80 @@ segmentation masks" refuse inputs containing `_raw_passthrough/`, `with-skulls/`
 `temp_preprocessing/` or astril scratch folders. Incremental preprocessing re-preprocesses the
 earlier raw NIfTI alongside the new exams (see below), so for real patient data it is local-only.
 
+### Making de-identified DICOM test data
+
+`scripts/deidentify_dicom_ctp.sh` de-identifies one patient's DICOM files (any number of scans,
+any layout) with RSNA CTP's anonymizer, through RSNA's command-line
+[DicomAnonymizerTool](https://github.com/johnperry/DicomAnonymizerTool). It starts from CTP's
+DICOM PS3.15 Basic profile and changes only what astril needs:
+- **Pseudonym:** PatientName and PatientID are set to the pseudonym you choose.
+- **Dates:** every date is shifted by one per-patient offset, so intervals between scans (astril's
+  `dN` timepoints) survive.
+- **Kept:** acquisition times, Manufacturer, ManufacturerModelName and ProtocolName, which astril
+  uses to order and classify series.
+
+The date offset is a re-identification key. It's written next to the output folder, not inside it.
+Accession numbers, birth dates, OriginalAttributesSequence and the ClinicalTrial* elements are
+removed as well.
+
+CTP's default profile is a denylist: anything it doesn't list passes through unchanged. Real PACS
+exports put identifiers in such places (Visage, for example, keeps pre-correction accession numbers
+and real dates in OriginalAttributesSequence). So on its own this script isn't enough for real
+data. Check its output with
+`python scripts/check_deidentified_dicom.py OUT --originals IN`, which lists:
+- every element, nested ones included, outside the allowlist in `scripts/deid_headers.py`
+- any value matching the patient's real identifiers, taken from the original files (MRN,
+  accession, names, unshifted dates, original UIDs, the source folder name)
+- series likely to have burned-in text
+- every free-text description, for you to review
+
+Flagged elements are shown by tag path, never by value.
+
+That covers the headers only. `scripts/deidentify_and_deface.py` also masks faces: it runs the
+header step, then WUSTL NRG's [`mask_face`](https://github.com/mmilch01/mask_face) (Docker) on each
+exam, then the check:
+
+```
+docker pull mmilch01/facemasking:1.21     # once; bundles MATLAB Runtime, FSL, HD-BET (7.6 GB)
+pip install pydicom numpy pylibjpeg pylibjpeg-libjpeg pylibjpeg-openjpeg   # once; JPEG decoders
+python scripts/deidentify_and_deface.py -i patient_dicom/ -o TEST001_dicom/ -p TEST001
+```
+
+- **Decompression first:** everything is first copied into a private scratch folder, decompressed
+  and re-encoded as Implicit VR Little Endian. Compressed input (e.g. JPEG Lossless PACS
+  exports) otherwise breaks both tools, silently: `mask_face` writes nothing, and CTP can blank
+  dates. If dates still go missing, the run stops instead of writing undated data.
+- **Workaround for a bug in the `mask_face` image:** `mmilch01/facemasking:1.21` ships FSL helper
+  scripts (`imcp`, `imglob`, …) whose `#!` lines point at a Python that isn't in the image.
+  Reorienting an oblique series needs `imcp`, so every oblique exam failed: HD-BET reported "Could
+  not read file". The wrapper mounts replacements that run the same `fslpy` code with the image's
+  own Python. `--no-fsl-shims` turns this off for a future, fixed image.
+- **Per exam:** all series are masked in one `mask_face` call. A reference series (`-r`; the
+  largest series, or the first match of `--ref-pattern`, e.g. `'mprage|t1.*post'`) makes the
+  masking consistent across series.
+- **Brain protection:** HD-BET keeps the mask out of the brain. This needs a GPU (`--gpus`); use
+  `--brain-protect bet` for FSL BET on CPU.
+- **Dropped series:** series that can't be masked or trusted are left out and listed in the
+  report. That covers non-MR, secondary captures/screenshots, localizers (detected by mixed slice
+  orientations, since vendors don't always label them), single slices, multi-frame files and
+  multi-volume series such as DWI, SWI and perfusion (repeated slice positions; `mask_face` needs one
+  3D volume). So does any series whose masked output fails verification (wrong geometry, or
+  nothing changed). If the whole-exam call fails, each series is retried on its own in a fresh
+  folder. Nothing is ever passed through unmasked.
+- **Ears:** masked too by default (`mask_face -e 1`); `--no-mask-ears` turns this off.
+- **Header allowlist and leak scan:** after masking, every header is cut down to what astril,
+  dcm2niix and `mask_face` use (`scripts/deid_headers.py`), recursively. Every remaining value
+  is then searched for the identifiers in the original headers. Any match deletes the output, and
+  the report lists the tag paths.
+- **Logs:** `TEST001_dicom.logs/` holds the `mask_face` logs. They contain only commands and
+  scratch-folder series names, never the input path.
+- **Output:** `TEST001_dicom/exam<N>_<shifted date>/<series>/`. Next to it go
+  `TEST001_dicom.deid_key.txt` (keep private), `TEST001_dicom.report.txt`, and
+  `TEST001_dicom.qc/`, mask_face's mosaics: **look at every one** to confirm the face and ears are obscured.
+- **Scratch data:** intermediate data (de-identified, not yet masked) lives in a private temp
+  folder that is deleted at the end, even on failure.
+- **Speed:** about 1 minute per exam on a GPU (2 series, 1 mm T1).
+
 No stage copies its inputs into its outputs: each stage publishes only what it produced, and a
 later run is pointed back at the earlier datasets it needs (on Cirro, by selecting them).
 
@@ -264,8 +338,8 @@ cause under the `CalledProcessError` astril reports on top of it).
 
 Build and publish with:
 ```
-docker build -t ghcr.io/alexander-ling/astril-nf:0.2.0 .
-docker push ghcr.io/alexander-ling/astril-nf:0.2.0
+docker build -t ghcr.io/alexander-ling/astril-nf:0.3.0 .
+docker push ghcr.io/alexander-ling/astril-nf:0.3.0
 ```
 To pick up newer astril code, bump `ASTRIL_GIT_REF` and `ASTRIL_VERSION` in the Dockerfile (the
 build fails if `ASTRIL_VERSION` doesn't match the installed astril), bump the image tag (here, in
