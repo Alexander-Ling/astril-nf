@@ -200,7 +200,7 @@ def mask_face(exam_dir, series_names, ref, args, logfile):
     return run(cmd, logfile)
 
 
-def scrub_and_scan(out, idents, keep_private):
+def scrub_and_scan(out, idents, keep_private, dates_shifted):
     """Allowlist-scrub every output header in place, then search what's left for the patient's real
     identifiers. Returns (Counter of removed element names, [(file, tag path, what matched)])."""
     removed, leaks = Counter(), []
@@ -213,7 +213,7 @@ def scrub_and_scan(out, idents, keep_private):
             ds = pydicom.dcmread(f)
         except Exception:
             continue
-        removed.update(path.rsplit(" > ", 1)[-1] for path in scrub(ds, keep_private))
+        removed.update(path.rsplit(" > ", 1)[-1] for path in scrub(ds, keep_private, dates_shifted))
         ds.save_as(f, enforce_file_format=True)
         leaks += [(rel, path, what) for path, what in idents.find_leaks(pydicom.dcmread(f, stop_before_pixels=True), patterns)]
     return removed, leaks
@@ -393,7 +393,7 @@ def main():
         # 5. Header allowlist + leak scan against the ORIGINAL identifiers (CTP's default profile
         # passes through anything it doesn't list, e.g. OriginalAttributesSequence, ClinicalTrial*).
         log("Scrubbing headers and scanning them for the original identifiers...")
-        removed, leaks = scrub_and_scan(out, idents, args.keep_private)
+        removed, leaks = scrub_and_scan(out, idents, args.keep_private, args.date_shift != 0)
         report.append("")
         report.append("Header elements removed after CTP (allowlist), files affected:")
         report += [f"   {name}: {n}" for name, n in sorted(removed.items())] or ["   none"]

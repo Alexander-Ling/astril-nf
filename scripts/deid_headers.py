@@ -58,11 +58,13 @@ def _keyword(elem):
     return elem.keyword or f"({elem.tag.group:04X},{elem.tag.element:04X})"
 
 
-def scrub(ds, keep_private=False):
+def scrub(ds, keep_private=False, dates_shifted=True):
     """Remove everything outside the allowlist, recursively, in place. Returns removed tag paths.
 
     keep_private keeps top-level private tags (deidentify_dicom_ctp.sh -k): some vendors keep
     acquisition details dcm2niix needs there, but they can hold PHI too.
+    dates_shifted records whether CTP shifted the dates (it does unless run with -d 0), so the
+    output doesn't claim its dates are the real ones.
     """
     removed = []
     for elem in list(ds.file_meta) if hasattr(ds, "file_meta") else []:
@@ -75,6 +77,8 @@ def scrub(ds, keep_private=False):
         if not m or int(m.group(1)) > 89:
             ds.PatientAge = "090Y" if m else ""
     ds.PatientIdentityRemoved = "YES"
+    # (0028,0303): CTP leaves the source's UNMODIFIED in place even though it shifted the dates.
+    ds.LongitudinalTemporalInformationModified = "MODIFIED" if dates_shifted else "UNMODIFIED"
     return removed
 
 
